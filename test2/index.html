@@ -233,36 +233,79 @@
             }
 
             try {
-                const videoInputDevices = await ZXing.BrowserCodeReader.listVideoInputDevices();
-                const deviceId = videoInputDevices.find(device => 
-                    device.label.toLowerCase().includes('back') || 
-                    device.label.toLowerCase().includes('rear')
-                )?.deviceId || undefined;
+                // 1. First check camera permissions
+                const permissions = await navigator.permissions.query({ name: 'camera' });
+                if (permissions.state === 'denied') {
+                    alert('Camera access is blocked. Please enable it in your browser settings.');
+                    return;
+                }
 
-                await codeReader.decodeFromVideoDevice(deviceId, 'preview', (result, err) => {
-                    if (result) {
-                        document.getElementById('scan-result').innerHTML = `
-                            <div class="alert alert-success">Scanned content: ${result.text}</div>
-                        `;
-                        document.getElementById('electricity-info').innerHTML += `<br>Scanned: ${result.text}`;
-                        stopScanner();
-                        showPage(1, document.querySelector('.nav-link'));
-                    }
-                    if (err && !(err instanceof ZXing.NotFoundException)) {
-                        console.error(err);
-                        stopScanner();
-                    }
-                });
+                // 2. Get list of available cameras
+                const videoInputDevices = await ZXing.BrowserCodeReader.listVideoInputDevices();
                 
+                if (videoInputDevices.length === 0) {
+                    alert('No cameras found on this device.');
+                    return;
+                }
+
+                console.log('Available cameras:', videoInputDevices);
+
+                // 3. Try to find back camera using multiple keywords
+                const backCameraKeywords = ['back', 'rear', 'main', 'environment', '1'];
+                const deviceId = videoInputDevices.find(device => 
+                    backCameraKeywords.some(keyword => 
+                        device.label.toLowerCase().includes(keyword)
+                    )
+                )?.deviceId || videoInputDevices[0].deviceId;
+
+                console.log('Selected camera:', videoInputDevices.find(d => d.deviceId === deviceId)?.label);
+
+                // 4. Add facingMode constraint as fallback
+                const constraints = {
+                    video: {
+                        deviceId: deviceId ? { exact: deviceId } : undefined,
+                        facingMode: { ideal: 'environment' }
+                    }
+                };
+
+                // 5. Start scanning with better error handling
+                await codeReader.decodeFromConstraints(
+                    constraints,
+                    'preview',
+                    (result, err) => {
+                        if (result) {
+                            handleScanResult(result.text);
+                        }
+                        if (err && !(err instanceof ZXing.NotFoundException)) {
+                            console.error('Scan error:', err);
+                            alert(`Scan error: ${err.message}`);
+                            stopScanner();
+                        }
+                    }
+                );
+
                 isScanning = true;
                 document.getElementById('preview').style.display = 'block';
                 document.getElementById('scan-result').style.display = 'none';
 
             } catch (error) {
-                console.error('Error starting scanner:', error);
-                alert('Error accessing camera. Please check permissions and try again.');
+                console.error('Camera access error:', error);
+                alert(`Camera error: ${error.message}`);
+                if (error.name === 'NotAllowedError') {
+                    alert('Please enable camera permissions in your browser settings');
+                }
             }
         }
+
+        function handleScanResult(text) {
+            document.getElementById('scan-result').innerHTML = `
+                <div class="alert alert-success">Scanned content: ${text}</div>
+            `;
+            document.getElementById('electricity-info').innerHTML += `<br>Scanned: ${text}`;
+            stopScanner();
+            showPage(1, document.querySelector('.nav-link'));
+        }
+
 
         function stopScanner() {
             if (codeReader) {
