@@ -127,28 +127,12 @@
                     <img src="payme-logo.png" class="payment-logo"> PayMe
                 </div>
                 <div class="list-group-item">
-                    <input class="form-check-input me-2" type="radio" name="payment" value="Apple Pay" onchange="updatePayButton()">
-                    <img src="applepay-logo.png" class="payment-logo"> Apple Pay
-                </div>
-                <div class="list-group-item">
-                    <input class="form-check-input me-2" type="radio" name="payment" value="Samsung Pay" onchange="updatePayButton()">
-                    <img src="samsungpay-logo.png" class="payment-logo"> Samsung Pay
-                </div>
-                <div class="list-group-item">
-                    <input class="form-check-input me-2" type="radio" name="payment" value="Google Pay" onchange="updatePayButton()">
-                    <img src="googlepay-logo.png" class="payment-logo"> Google Pay
-                </div>
-                <div class="list-group-item">
                     <input class="form-check-input me-2" type="radio" name="payment" value="Alipay" onchange="updatePayButton()">
                     <img src="alipay-logo.png" class="payment-logo"> Alipay
                 </div>
                 <div class="list-group-item">
                     <input class="form-check-input me-2" type="radio" name="payment" value="WeChat Pay" onchange="updatePayButton()">
                     <img src="wechatpay-logo.png" class="payment-logo"> WeChat Pay
-                </div>
-                <div class="list-group-item">
-                    <input class="form-check-input me-2" type="radio" name="payment" value="PayPal" onchange="updatePayButton()">
-                    <img src="https://www.paypalobjects.com/webstatic/mktg/logo/pp_cc_mark_37x23.jpg" class="payment-logo"> PayPal
                 </div>
                 <div class="list-group-item">
                     <input class="form-check-input me-2" type="radio" name="payment" value="Mastercard" onchange="updatePayButton()">
@@ -161,6 +145,10 @@
                 <div class="list-group-item">
                     <input class="form-check-input me-2" type="radio" name="payment" value="UnionPay" onchange="updatePayButton()">
                     <img src="unionpay-logo.png" class="payment-logo"> UnionPay
+                </div>
+                <div class="list-group-item">
+                    <input class="form-check-input me-2" type="radio" name="payment" value="PayPal" onchange="updatePayButton()">
+                    <img src="https://www.paypalobjects.com/webstatic/mktg/logo/pp_cc_mark_37x23.jpg" class="payment-logo"> PayPal
                 </div>
             </div>
 
@@ -258,18 +246,25 @@
             });
 
             Instascan.Camera.getCameras().then(cameras => {
-                const backCamera = cameras.find(c => c.facing === 'environment');
-                if (backCamera) {
-                    scanner.start(backCamera);
-                } else if (cameras.length > 0) {
-                    scanner.start(cameras[0]);
+                if (cameras.length > 0) {
+                    var selectedCam = cameras[0];
+                    $.each(cameras, (i, c) => {
+                        if (c.name.indexOf('back') != -1) {
+                            selectedCam = c;
+                            return false;
+                        }
+                    });
+
+                    scanner.start(selectedCam);
                 } else {
-                    alert('Camera access is required for scanning');
+                    console.error('No cameras found.');
                 }
             }).catch(error => {
                 console.error('Camera error:', error);
                 alert('Error accessing camera');
             });
+
+            
         }
 
         function togglePayment(button, type) {
