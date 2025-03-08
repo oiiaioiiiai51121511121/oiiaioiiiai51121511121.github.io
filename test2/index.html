@@ -64,7 +64,7 @@
     <!-- Header -->
     <nav class="navbar navbar-dark bg-primary header-top">
         <div class="container-fluid">
-            <span class="navbar-brand mb-0 h1">asdfasdf</span>
+            <span class="navbar-brand mb-0 h1">154</span>
             <button id="install-button" class="btn btn-light" style="display: none;">
                 <i class="bi bi-download"></i> Install
             </button>
@@ -191,6 +191,7 @@
         let scanner = null;
         let deferredPrompt;
         let scannerStream = null;
+        let scannedData = null;
 
         // PWA Install Button Logic
         window.addEventListener('beforeinstallprompt', (e) => {
@@ -220,16 +221,21 @@
             
             document.querySelector('.active-page').classList.remove('active-page');
             document.getElementById(`page${pageNumber}`).classList.add('active-page');
+
+            // Update electricity info when showing page 1
+            if (pageNumber === 1 && scannedData) {
+                document.getElementById('electricity-info').innerHTML = 
+                    `hello this is the electricity information page!<br>Scanned: ${scannedData}`;
+            }
             
             if (pageNumber === 2) {
                 startScanner();
-            } else if (scanner) {
-                scanner.stop();
+            } else {
+                stopScanner();
                 document.getElementById('preview').style.display = 'block';
                 document.getElementById('scan-result').style.display = 'none';
             }
         }
-
 
         function startScanner() {
             const video = document.getElementById('preview');
@@ -259,10 +265,13 @@
                         });
 
                         if (code) {
-                            document.getElementById('scan-result').innerHTML = `
-                                <div class="alert alert-success">Scanned content: ${code.data}</div>
-                            `;
-                            document.getElementById('electricity-info').innerHTML += `<br>Scanned: ${code.data}`;
+                            scannedData = code.data; // Store scanned data
+                            console.log('Scanned data:', scannedData); // Debug log
+                            
+                            // Update electricity page immediately
+                            document.getElementById('electricity-info').innerHTML = 
+                                `hello this is the electricity information page!<br>Scanned: ${scannedData}`;
+                            
                             stopScanner();
                             showPage(1, document.querySelector('.nav-link'));
                         }
@@ -279,22 +288,6 @@
             if (scannerStream) {
                 scannerStream.getTracks().forEach(track => track.stop());
                 scannerStream = null;
-            }
-        }
-
-        function showPage(pageNumber, linkElement) {
-            document.querySelectorAll('.nav-link').forEach(link => link.classList.remove('active'));
-            linkElement.classList.add('active');
-            
-            document.querySelector('.active-page').classList.remove('active-page');
-            document.getElementById(`page${pageNumber}`).classList.add('active-page');
-            
-            if (pageNumber === 2) {
-                startScanner();
-            } else {
-                stopScanner();
-                document.getElementById('preview').style.display = 'block';
-                document.getElementById('scan-result').style.display = 'none';
             }
         }
 
