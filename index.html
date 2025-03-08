@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>App for Smart Electricity Meter</title>
+    <title>App for ddSmart Electricity Meter</title>
     <link rel="manifest" href="/manifest.json">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Dosis:wght@400;500;600&display=swap" rel="stylesheet">
@@ -245,24 +245,19 @@
                 showPage(1, document.querySelector('.nav-link')); // Jump to electricity page
             });
 
-            Instascan.Camera.getCameras().then(cameras => {
-                if (cameras.length > 0) {
-                    var selectedCam = cameras[0];
-                    $.each(cameras, (i, c) => {
-                        if (c.name.indexOf('back') != -1) {
-                            selectedCam = c;
-                            return false;
-                        }
-                    });
+            if (cameras.length > 0) {
+                var selectedCam = cameras[0];
+                $.each(cameras, (i, c) => {
+                    if (c.name.indexOf('back') != -1) {
+                        selectedCam = c;
+                        return false;
+                    }
+                });
 
-                    scanner.start(selectedCam);
-                } else {
-                    console.error('No cameras found.');
-                }
-            }).catch(error => {
-                console.error('Camera error:', error);
-                alert('Error accessing camera');
-            });
+                scanner.start(selectedCam);
+            } else {
+                console.error('No cameras found.');
+            }
 
             
         }
