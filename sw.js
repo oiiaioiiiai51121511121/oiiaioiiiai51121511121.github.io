@@ -6,8 +6,7 @@ const ASSETS = [
     'https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css',
     'https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js',
     'https://fonts.googleapis.com/css2?family=Dosis:wght@400;500;600&display=swap',
-    // Add all payment logo URLs here
-    'https://en.wikipedia.org/wiki/Faster_Payment_System#/media/File:Faster_Payment_System_logo.svg',
+    'https://upload.wikimedia.org/wikipedia/en/5/5f/Faster_Payment_System_logo.svg',
     'https://www.octopus.com.hk/en/business/merchant-support/branding-guideline/images/ocl-logo.png',
     'https://upload.wikimedia.org/wikipedia/commons/4/4c/PayMe_from_HSBC_wordmark.svg',
     'https://www.logo.wine/a/logo/Alipay/Alipay-Logo.wine.svg',
