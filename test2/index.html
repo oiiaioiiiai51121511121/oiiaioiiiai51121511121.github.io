@@ -64,7 +64,7 @@
     <!-- Header -->
     <nav class="navbar navbar-dark bg-primary header-top">
         <div class="container-fluid">
-            <span class="navbar-brand mb-0 h1">sdgfdsgdfgfggggggg</span>
+            <span class="navbar-brand mb-0 h1">Afdffff</span>
             <button id="install-button" class="btn btn-light" style="display: none;">
                 <i class="bi bi-download"></i> Install
             </button>
@@ -82,7 +82,7 @@
 
     <div id="page2" class="page-content">
         <div class="position-relative">
-            <div id="preview" style="width: 100%; height: calc(100vh - 130px);"></div>
+            <video id="preview" class="w-100" style="height: calc(100vh - 130px); object-fit: cover;"></video>
             <div class="scan-overlay"></div>
         </div>
         <div id="scan-result" class="container mt-3" style="display: none;"></div>
@@ -181,14 +181,15 @@
         </ul>
     </nav>
 
-    <!-- External Scripts -->
+    <!-- Bootstrap Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="https://unpkg.com/html5-qrcode/minified/html5-qrcode.min.js"></script>
+    <script src="https://unpkg.com/@zxing/library@latest"></script>
     <script>
         let currentPage = 1;
-        let html5QrcodeScanner = null;
+        let codeReader = null;
         let deferredPrompt;
+        let isScanning = false;
 
         // PWA Install Button Logic
         window.addEventListener('beforeinstallprompt', (e) => {
@@ -221,33 +222,54 @@
             
             if (pageNumber === 2) {
                 startScanner();
-            } else if (html5QrcodeScanner) {
-                html5QrcodeScanner.stop().catch(err => console.error('Error stopping scanner:', err));
-                document.getElementById('scan-result').style.display = 'none';
+            } else if (isScanning) {
+                stopScanner();
             }
         }
 
-        function startScanner() {
-            if (!html5QrcodeScanner) {
-                html5QrcodeScanner = new Html5Qrcode("preview");
+        async function startScanner() {
+            if (!codeReader) {
+                codeReader = new ZXing.BrowserQRCodeReader();
             }
-            document.getElementById('scan-result').style.display = 'none';
-            const config = { fps: 10, qrbox: { width: 250, height: 250 } };
-            const qrCodeSuccessCallback = (decodedText, decodedResult) => {
-                document.getElementById('scan-result').innerHTML = `
-                    <div class="alert alert-success">Scanned content: ${decodedText}</div>
-                `;
-                document.getElementById('scan-result').style.display = 'block';
-                document.getElementById('electricity-info').innerHTML += `<br>Scanned: ${decodedText}`;
-                html5QrcodeScanner.stop().then(() => {
-                    showPage(1, document.querySelector('.nav-link'));
-                }).catch(err => console.error(err));
-            };
-            html5QrcodeScanner.start({ facingMode: "environment" }, config, qrCodeSuccessCallback)
-                .catch(err => {
-                    console.error('Error starting scanner:', err);
-                    alert('Unable to start the scanner. Please check camera permissions.');
+
+            try {
+                const videoInputDevices = await ZXing.BrowserCodeReader.listVideoInputDevices();
+                const deviceId = videoInputDevices.find(device => 
+                    device.label.toLowerCase().includes('back') || 
+                    device.label.toLowerCase().includes('rear')
+                )?.deviceId || undefined;
+
+                await codeReader.decodeFromVideoDevice(deviceId, 'preview', (result, err) => {
+                    if (result) {
+                        document.getElementById('scan-result').innerHTML = `
+                            <div class="alert alert-success">Scanned content: ${result.text}</div>
+                        `;
+                        document.getElementById('electricity-info').innerHTML += `<br>Scanned: ${result.text}`;
+                        stopScanner();
+                        showPage(1, document.querySelector('.nav-link'));
+                    }
+                    if (err && !(err instanceof ZXing.NotFoundException)) {
+                        console.error(err);
+                        stopScanner();
+                    }
                 });
+                
+                isScanning = true;
+                document.getElementById('preview').style.display = 'block';
+                document.getElementById('scan-result').style.display = 'none';
+
+            } catch (error) {
+                console.error('Error starting scanner:', error);
+                alert('Error accessing camera. Please check permissions and try again.');
+            }
+        }
+
+        function stopScanner() {
+            if (codeReader) {
+                codeReader.reset();
+                isScanning = false;
+                document.getElementById('preview').style.display = 'none';
+            }
         }
 
         function togglePayment(button, type) {
