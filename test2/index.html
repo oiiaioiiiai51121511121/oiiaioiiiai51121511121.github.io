@@ -64,7 +64,7 @@
     <!-- Header -->
     <nav class="navbar navbar-dark bg-primary header-top">
         <div class="container-fluid">
-            <span class="navbar-brand mb-0 h1">154</span>
+            <span class="navbar-brand mb-0 h1">sdgfdsgdfgfggggggg</span>
             <button id="install-button" class="btn btn-light" style="display: none;">
                 <i class="bi bi-download"></i> Install
             </button>
@@ -82,7 +82,7 @@
 
     <div id="page2" class="page-content">
         <div class="position-relative">
-            <video id="preview" class="w-100" style="height: calc(100vh - 130px); object-fit: cover;"></video>
+            <div id="preview" style="width: 100%; height: calc(100vh - 130px);"></div>
             <div class="scan-overlay"></div>
         </div>
         <div id="scan-result" class="container mt-3" style="display: none;"></div>
@@ -181,16 +181,14 @@
         </ul>
     </nav>
 
-    <!-- Bootstrap Icons -->
+    <!-- External Scripts -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="https://unpkg.com/@zxing/library@latest"></script>
+    <script src="https://unpkg.com/html5-qrcode/minified/html5-qrcode.min.js"></script>
     <script>
         let currentPage = 1;
-        let scanner = null;
+        let html5QrcodeScanner = null;
         let deferredPrompt;
-        let scannerStream = null;
-        let scannedData = null;
 
         // PWA Install Button Logic
         window.addEventListener('beforeinstallprompt', (e) => {
@@ -223,69 +221,34 @@
             
             if (pageNumber === 2) {
                 startScanner();
-            } else {
-                stopScanner();
+            } else if (html5QrcodeScanner) {
+                html5QrcodeScanner.stop().catch(err => console.error('Error stopping scanner:', err));
+                document.getElementById('scan-result').style.display = 'none';
             }
         }
 
-        async function startScanner() {
-            const videoElement = document.getElementById('preview');
-            codeReader = new ZXing.BrowserQRCodeReader();
-            
-            try {
-                const videoInputDevices = await ZXing.BrowserCodeReader.listVideoInputDevices();
-                
-                // Try to find back camera
-                const backCamera = videoInputDevices.find(device => 
-                    device.label.toLowerCase().includes('back') ||
-                    device.label.toLowerCase().includes('rear')
-                );
-
-                if (backCamera) {
-                    currentCameraId = backCamera.deviceId;
-                } else if (videoInputDevices.length > 0) {
-                    currentCameraId = videoInputDevices[0].deviceId;
-                }
-
-                if (currentCameraId) {
-                    await codeReader.decodeFromVideoDevice(currentCameraId, videoElement, (result, err) => {
-                        if (result) {
-                            handleScanResult(result.text);
-                        }
-                        if (err && !(err instanceof ZXing.NotFoundException)) {
-                            console.error(err);
-                        }
-                    });
-                } else {
-                    throw new Error('No cameras found');
-                }
-            } catch (error) {
-                console.error('Error accessing cameras:', error);
-                alert('Camera access denied or no cameras available');
+        function startScanner() {
+            if (!html5QrcodeScanner) {
+                html5QrcodeScanner = new Html5Qrcode("preview");
             }
+            document.getElementById('scan-result').style.display = 'none';
+            const config = { fps: 10, qrbox: { width: 250, height: 250 } };
+            const qrCodeSuccessCallback = (decodedText, decodedResult) => {
+                document.getElementById('scan-result').innerHTML = `
+                    <div class="alert alert-success">Scanned content: ${decodedText}</div>
+                `;
+                document.getElementById('scan-result').style.display = 'block';
+                document.getElementById('electricity-info').innerHTML += `<br>Scanned: ${decodedText}`;
+                html5QrcodeScanner.stop().then(() => {
+                    showPage(1, document.querySelector('.nav-link'));
+                }).catch(err => console.error(err));
+            };
+            html5QrcodeScanner.start({ facingMode: "environment" }, config, qrCodeSuccessCallback)
+                .catch(err => {
+                    console.error('Error starting scanner:', err);
+                    alert('Unable to start the scanner. Please check camera permissions.');
+                });
         }
-
-        function handleScanResult(content) {
-            document.getElementById('scan-result').innerHTML = `
-                <div class="alert alert-success">Scanned content: ${content}</div>
-            `;
-            document.getElementById('electricity-info').innerHTML += `<br>Scanned: ${content}`;
-            stopScanner();
-            showPage(1, document.querySelector('.nav-link'));
-        }
-
-        function stopScanner() {
-            if (codeReader) {
-                codeReader.reset();
-                codeReader = null;
-            }
-            const videoElement = document.getElementById('preview');
-            if (videoElement.srcObject) {
-                videoElement.srcObject.getTracks().forEach(track => track.stop());
-                videoElement.srcObject = null;
-            }
-        }
-
 
         function togglePayment(button, type) {
             document.querySelectorAll('[data-payment-type]').forEach(btn => btn.classList.remove('active'));
