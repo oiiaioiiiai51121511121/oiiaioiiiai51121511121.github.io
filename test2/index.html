@@ -184,8 +184,7 @@
     <!-- Bootstrap Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
-    <script src="https://webrtc.github.io/adapter/adapter-latest.js"></script>
+    <script src="https://unpkg.com/@zxing/library@latest"></script>
     <script>
         let currentPage = 1;
         let scanner = null;
@@ -221,73 +220,69 @@
             
             document.querySelector('.active-page').classList.remove('active-page');
             document.getElementById(`page${pageNumber}`).classList.add('active-page');
-
-            // Update electricity info when showing page 1
-            if (pageNumber === 1 && scannedData) {
-                document.getElementById('electricity-info').innerHTML = 
-                    `hello this is the electricity information page!<br>Scanned: ${scannedData}`;
-            }
             
             if (pageNumber === 2) {
                 startScanner();
             } else {
                 stopScanner();
-                document.getElementById('preview').style.display = 'block';
-                document.getElementById('scan-result').style.display = 'none';
             }
         }
 
-        function startScanner() {
-            const video = document.getElementById('preview');
-            const canvas = document.createElement('canvas');
-            const ctx = canvas.getContext('2d');
-
-            navigator.mediaDevices.getUserMedia({
-                video: {
-                    facingMode: 'environment',
-                    width: { ideal: 1280 },
-                    height: { ideal: 720 }
-                }
-            }).then(function(stream) {
-                scannerStream = stream;
-                video.srcObject = stream;
-                video.play();
+        async function startScanner() {
+            const videoElement = document.getElementById('preview');
+            codeReader = new ZXing.BrowserQRCodeReader();
+            
+            try {
+                const videoInputDevices = await ZXing.BrowserCodeReader.listVideoInputDevices();
                 
-                function scanFrame() {
-                    if (video.readyState === video.HAVE_ENOUGH_DATA) {
-                        canvas.width = video.videoWidth;
-                        canvas.height = video.videoHeight;
-                        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-                        
-                        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-                        const code = jsQR(imageData.data, imageData.width, imageData.height, {
-                            inversionAttempts: 'dontInvert',
-                        });
+                // Try to find back camera
+                const backCamera = videoInputDevices.find(device => 
+                    device.label.toLowerCase().includes('back') ||
+                    device.label.toLowerCase().includes('rear')
+                );
 
-                        if (code) {
-                            scannedData = code.data; // Store scanned data
-                            console.log('Scanned data:', scannedData); // Debug log
-                            
-                            // Update electricity page immediately
-                            document.getElementById('electricity-info').innerHTML = 
-                                `hello this is the electricity information page!<br>Scanned: ${scannedData}`;
-                            
-                            stopScanner();
-                            showPage(1, document.querySelector('.nav-link'));
-                        }
-                    }
-                    requestAnimationFrame(scanFrame);
+                if (backCamera) {
+                    currentCameraId = backCamera.deviceId;
+                } else if (videoInputDevices.length > 0) {
+                    currentCameraId = videoInputDevices[0].deviceId;
                 }
-                scanFrame();
-            }).catch(function(err) {
-                console.error('Camera access error:', err);
-            });
+
+                if (currentCameraId) {
+                    await codeReader.decodeFromVideoDevice(currentCameraId, videoElement, (result, err) => {
+                        if (result) {
+                            handleScanResult(result.text);
+                        }
+                        if (err && !(err instanceof ZXing.NotFoundException)) {
+                            console.error(err);
+                        }
+                    });
+                } else {
+                    throw new Error('No cameras found');
+                }
+            } catch (error) {
+                console.error('Error accessing cameras:', error);
+                alert('Camera access denied or no cameras available');
+            }
+        }
+
+        function handleScanResult(content) {
+            document.getElementById('scan-result').innerHTML = `
+                <div class="alert alert-success">Scanned content: ${content}</div>
+            `;
+            document.getElementById('electricity-info').innerHTML += `<br>Scanned: ${content}`;
+            stopScanner();
+            showPage(1, document.querySelector('.nav-link'));
         }
 
         function stopScanner() {
-            if (scannerStream) {
-                scannerStream.getTracks().forEach(track => track.stop());
-                scannerStream = null;
+            if (codeReader) {
+                codeReader.reset();
+                codeReader = null;
+            }
+            const videoElement = document.getElementById('preview');
+            if (videoElement.srcObject) {
+                videoElement.srcObject.getTracks().forEach(track => track.stop());
+                videoElement.srcObject = null;
             }
         }
 
