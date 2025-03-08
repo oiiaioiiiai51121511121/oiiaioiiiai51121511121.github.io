@@ -3,7 +3,9 @@ const ASSETS = [
     '/',
     '/index.html',
     '/manifest.json',
-    // Add paths to your icons here
+    'https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css',
+    'https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js',
+    'https://fonts.googleapis.com/css2?family=Dosis:wght@400;500;600&display=swap'
 ];
 
 self.addEventListener('install', event => {
