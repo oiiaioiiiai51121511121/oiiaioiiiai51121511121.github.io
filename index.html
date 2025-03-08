@@ -64,7 +64,7 @@
     <!-- Header -->
     <nav class="navbar navbar-dark bg-primary header-top">
         <div class="container-fluid">
-            <span class="navbar-brand mb-0 h1">232</span>
+            <span class="navbar-brand mb-0 h1">App for Smart Electricity Meter</span>
             <button id="install-button" class="btn btn-light" style="display: none;">
                 <i class="bi bi-download"></i> Install
             </button>
@@ -135,6 +135,10 @@
                     <img src="wechatpay-logo.png" class="payment-logo"> WeChat Pay
                 </div>
                 <div class="list-group-item">
+                    <input class="form-check-input me-2" type="radio" name="payment" value="PayPal" onchange="updatePayButton()">
+                    <img src="https://www.paypalobjects.com/webstatic/mktg/logo/pp_cc_mark_37x23.jpg" class="payment-logo"> PayPal
+                </div>
+                <div class="list-group-item">
                     <input class="form-check-input me-2" type="radio" name="payment" value="Mastercard" onchange="updatePayButton()">
                     <img src="mastercard-logo.png" class="payment-logo"> Mastercard
                 </div>
@@ -145,10 +149,6 @@
                 <div class="list-group-item">
                     <input class="form-check-input me-2" type="radio" name="payment" value="UnionPay" onchange="updatePayButton()">
                     <img src="unionpay-logo.png" class="payment-logo"> UnionPay
-                </div>
-                <div class="list-group-item">
-                    <input class="form-check-input me-2" type="radio" name="payment" value="PayPal" onchange="updatePayButton()">
-                    <img src="https://www.paypalobjects.com/webstatic/mktg/logo/pp_cc_mark_37x23.jpg" class="payment-logo"> PayPal
                 </div>
             </div>
 
@@ -245,7 +245,6 @@
                 showPage(1, document.querySelector('.nav-link')); // Jump to electricity page
             });
 
-            //Detect user's cameras
             Instascan.Camera.getCameras().then(function (cameras) {
                 //If a camera is detected
                 if (cameras.length > 0) {
@@ -264,8 +263,6 @@
             }).catch(function (e) {
                 console.error(e);
             });   
-
-            
         }
 
         function togglePayment(button, type) {
