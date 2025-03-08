@@ -64,7 +64,7 @@
     <!-- Header -->
     <nav class="navbar navbar-dark bg-primary header-top">
         <div class="container-fluid">
-            <span class="navbar-brand mb-0 h1">oinkddoink</span>
+            <span class="navbar-brand mb-0 h1">asdfasdf</span>
             <button id="install-button" class="btn btn-light" style="display: none;">
                 <i class="bi bi-download"></i> Install
             </button>
@@ -246,11 +246,17 @@
             });
 
             Instascan.Camera.getCameras().then(function (cameras) {
-                //If a camera is detected
                 if (cameras.length > 0) {
-                    scanner.start(cameras[2]);
+                    var selectedCam = cameras[0];
+                    $.each(cameras, (i, c) => {
+                        if (c.name.indexOf('back') != -1) {
+                            selectedCam = c;
+                            return false;
+                        }
+                    });
+
+                    scanner.start(selectedCam);
                 } else {
-                    //if no cameras are detected give error
                     console.error('No cameras found.');
                 }
             }).catch(function (e) {
