@@ -64,7 +64,7 @@
     <!-- Header -->
     <nav class="navbar navbar-dark bg-primary header-top">
         <div class="container-fluid">
-            <span class="navbar-brand mb-0 h1">Afdfdfffssfff</span>
+            <span class="navbar-brand mb-0 h1">App for Smart Electricity Meter</span>
             <button id="install-button" class="btn btn-light" style="display: none;">
                 <i class="bi bi-download"></i> Install
             </button>
@@ -184,12 +184,11 @@
     <!-- Bootstrap Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="https://unpkg.com/@zxing/library@latest"></script>
+    <script src="https://unpkg.com/@zxing/library@0.18.6/umd/index.min.js"></script>
     <script>
         let currentPage = 1;
-        let codeReader = null;
+        let codeReader;
         let deferredPrompt;
-        let isScanning = false;
 
         // PWA Install Button Logic
         window.addEventListener('beforeinstallprompt', (e) => {
@@ -222,97 +221,39 @@
             
             if (pageNumber === 2) {
                 startScanner();
-            } else if (isScanning) {
-                stopScanner();
-            }
-        }
-
-        async function startScanner() {
-            if (!codeReader) {
-                codeReader = new ZXing.BrowserQRCodeReader();
-            }
-
-            try {
-                // 1. First check camera permissions
-                const permissions = await navigator.permissions.query({ name: 'camera' });
-                if (permissions.state === 'denied') {
-                    alert('Camera access is blocked. Please enable it in your browser settings.');
-                    return;
-                }
-
-                // 2. Get list of available cameras
-                const videoInputDevices = await ZXing.BrowserCodeReader.listVideoInputDevices();
-                
-                if (videoInputDevices.length === 0) {
-                    alert('No cameras found on this device.');
-                    return;
-                }
-
-                console.log('Available cameras:', videoInputDevices);
-
-                // 3. Try to find back camera using multiple keywords
-                const backCameraKeywords = ['back', 'rear', 'main', 'environment', '1'];
-                const deviceId = videoInputDevices.find(device => 
-                    backCameraKeywords.some(keyword => 
-                        device.label.toLowerCase().includes(keyword)
-                    )
-                )?.deviceId || videoInputDevices[0].deviceId;
-
-                console.log('Selected camera:', videoInputDevices.find(d => d.deviceId === deviceId)?.label);
-
-                // 4. Add facingMode constraint as fallback
-                const constraints = {
-                    video: {
-                        deviceId: deviceId ? { exact: deviceId } : undefined,
-                        facingMode: { ideal: 'environment' }
-                    }
-                };
-
-                // 5. Start scanning with better error handling
-                await codeReader.decodeFromConstraints(
-                    constraints,
-                    'preview',
-                    (result, err) => {
-                        if (result) {
-                            handleScanResult(result.text);
-                        }
-                        if (err && !(err instanceof ZXing.NotFoundException)) {
-                            console.error('Scan error:', err);
-                            alert(`Scan error: ${err.message}`);
-                            stopScanner();
-                        }
-                    }
-                );
-
-                isScanning = true;
+            } else if (codeReader) {
+                codeReader.reset();
                 document.getElementById('preview').style.display = 'block';
                 document.getElementById('scan-result').style.display = 'none';
-
-            } catch (error) {
-                console.error('Camera access error:', error);
-                alert(`Camera error: ${error.message}`);
-                if (error.name === 'NotAllowedError') {
-                    alert('Please enable camera permissions in your browser settings');
-                }
             }
         }
 
-        function handleScanResult(text) {
-            document.getElementById('scan-result').innerHTML = `
-                <div class="alert alert-success">Scanned content: ${text}</div>
-            `;
-            document.getElementById('electricity-info').innerHTML += `<br>Scanned: ${text}`;
-            stopScanner();
-            showPage(1, document.querySelector('.nav-link'));
-        }
-
-
-        function stopScanner() {
+        function startScanner() {
             if (codeReader) {
                 codeReader.reset();
-                isScanning = false;
-                document.getElementById('preview').style.display = 'none';
             }
+            codeReader = new ZXing.BrowserMultiFormatReader();
+            const videoElement = document.getElementById('preview');
+            const constraints = {
+                video: {
+                    facingMode: 'environment'
+                }
+            };
+            codeReader.decodeFromConstraints(constraints, videoElement, (result, err) => {
+                if (result) {
+                    document.getElementById('scan-result').innerHTML = `
+                        <div class="alert alert-success">Scanned content: ${result.text}</div>
+                    `;
+                    document.getElementById('electricity-info').innerHTML += `<br>Scanned: ${result.text}`;
+                    codeReader.reset();
+                    showPage(1, document.querySelector('.nav-link')); // Jump to electricity page
+                }
+                if (err && !(err instanceof ZXing.NotFoundException)) {
+                    console.error(err);
+                }
+            }).catch(err => {
+                console.error('Error starting scanner:', err);
+            });
         }
 
         function togglePayment(button, type) {
