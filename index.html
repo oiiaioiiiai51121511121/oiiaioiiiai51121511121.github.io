@@ -64,7 +64,7 @@
     <!-- Header -->
     <nav class="navbar navbar-dark bg-primary header-top">
         <div class="container-fluid">
-            <span class="navbar-brand mb-0 h1">123</span>
+            <span class="navbar-brand mb-0 h1">232</span>
             <button id="install-button" class="btn btn-light" style="display: none;">
                 <i class="bi bi-download"></i> Install
             </button>
@@ -245,19 +245,25 @@
                 showPage(1, document.querySelector('.nav-link')); // Jump to electricity page
             });
 
-            if (cameras.length > 0) {
-                var selectedCam = cameras[0];
-                $.each(cameras, (i, c) => {
-                    if (c.name.indexOf('back') != -1) {
-                        selectedCam = c;
-                        return false;
+            //Detect user's cameras
+            Instascan.Camera.getCameras().then(function (cameras) {
+                //If a camera is detected
+                if (cameras.length > 0) {
+                    //If the user has a rear/back camera
+                    if (cameras[1]) {
+                        //use that by default
+                        scanner.start(cameras[1]);
+                    } else {
+                        //else use front camera
+                        scanner.start(cameras[0]);
                     }
-                });
-
-                scanner.start(selectedCam);
-            } else {
-                console.error('No cameras found.');
-            }
+                } else {
+                    //if no cameras are detected give error
+                    console.error('No cameras found.');
+                }
+            }).catch(function (e) {
+                console.error(e);
+            });   
 
             
         }
