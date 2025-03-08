@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Electricity PWA</title>
+    <link rel="manifest" href="manifest.json">
+    <style>
+        body { margin: 0; padding: 0; }
+        .page { display: none; height: calc(100vh - 60px); padding: 20px; }
+        .active { display: block; }
+        #nav { position: fixed; bottom: 0; width: 100%; display: flex; background: #f0f0f0; }
+        .nav-btn { flex: 1; padding: 15px; border: none; background: none; }
+        #preview { width: 100%; height: 100%; }
+        #payment-methods { margin-top: 20px; }
+        .payment-option { display: flex; align-items: center; margin: 10px 0; }
+        #pay-button { width: 100%; padding: 15px; margin-top: 20px; }
+    </style>
+</head>
+<body>
+    <!-- Pages -->
+    <div id="page1" class="page active">
+        <div id="electricity-info">hello this is the electricity information page!</div>
+    </div>
+
+    <div id="page2" class="page">
+        <video id="preview"></video>
+        <div id="scan-result" style="display: none;"></div>
+    </div>
+
+    <div id="page3" class="page">
+        <div style="display: flex; justify-content: space-between;">
+            <span>payment method: </span>
+            <button id="toggle-payment" onclick="togglePayment()">pre-payment</button>
+        </div>
+        <div id="payment-area" style="margin-top: 20px;"></div>
+        
+        <div id="payment-methods">
+            <div class="payment-option">
+                <input type="radio" name="payment" value="PayPal" checked> 
+                <img src="https://www.paypalobjects.com/webstatic/mktg/logo/pp_cc_mark_37x23.jpg" width="37" height="23">
+                PayPal
+            </div>
+            <div class="payment-option">
+                <input type="radio" name="payment" value="Stripe"> 
+                <img src="https://stripe.com/img/v3/home/social.png" width="37" height="23">
+                Stripe
+            </div>
+        </div>
+        <button id="pay-button" onclick="handlePayment()">Pay with PayPal</button>
+    </div>
+
+    <!-- Navigation -->
+    <div id="nav">
+        <button class="nav-btn" onclick="showPage(1)">⚡ Info</button>
+        <button class="nav-btn" onclick="showPage(2)">📷 Scan</button>
+        <button class="nav-btn" onclick="showPage(3)">💳 Pay</button>
+    </div>
+
+    <script src="https://rawgit.com/schmich/instascan-builds/master/instascan.min.js"></script>
+    <script>
+        let currentPage = 1;
+        let scanner = null;
+        let isPrePayment = true;
+
+        function showPage(pageNumber) {
+            document.querySelector('.active').classList.remove('active');
+            document.getElementById(`page${pageNumber}`).classList.add('active');
+            
+            if(pageNumber === 2) startScanner();
+            else if(scanner) scanner.stop();
+            
+            currentPage = pageNumber;
+        }
+
+        function startScanner() {
+            scanner = new Instascan.Scanner({ video: document.getElementById('preview') });
+            scanner.addListener('scan', function (content) {
+                document.getElementById('scan-result').innerHTML = content;
+                document.getElementById('electricity-info').innerHTML += `<br>Scanned: ${content}`;
+                scanner.stop();
+                document.getElementById('preview').style.display = 'none';
+                document.getElementById('scan-result').style.display = 'block';
+            });
+            
+            Instascan.Camera.getCameras().then(function (cameras) {
+                if (cameras.length > 0) {
+                    scanner.start(cameras[0]);
+                } else {
+                    console.error('No cameras found.');
+                }
+            });
+        }
+
+        function togglePayment() {
+            isPrePayment = !isPrePayment;
+            document.getElementById('toggle-payment').textContent = 
+                isPrePayment ? 'pre-payment' : 'pay-as-you-go';
+            
+            const paymentArea = document.getElementById('payment-area');
+            paymentArea.innerHTML = isPrePayment ? 
+                '<input type="number" placeholder="Enter amount" style="width: 100%; padding: 10px;">' :
+                '<div style="font-size: 48px; text-align: center;">$0.15/kWh</div>';
+        }
+
+        function handlePayment() {
+            const method = document.querySelector('input[name="payment"]:checked').value;
+            alert(`Processing payment with ${method}`);
+        }
+
+        // PWA Installation
+        if('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('sw.js');
+        }
+    </script>
+</body>
+</html>
