@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>App for Smart Electricity Meter</title>
+    <title>Smart Electricity Meter</title>
     <link rel="manifest" href="/manifest.json">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Dosis:wght@400;500;600&display=swap" rel="stylesheet">
@@ -42,16 +42,16 @@
             width: 100%;
             z-index: 1000;
         }
-        .page-content {
-            display: none;
-            padding: 20px;
+        .install-btn {
+            padding: 5px 10px;
+            font-size: 0.9rem;
         }
-        .active-page {
-            display: block;
+        #pay-button {
+            font-size: 1.2rem;
+            padding: 15px 0;
         }
-        .payment-logo {
-            width: 40px;
-            margin-right: 10px;
+        .btn-success.active {
+            color: white !important;
         }
     </style>
 </head>
@@ -60,6 +60,9 @@
     <nav class="navbar navbar-dark bg-primary header-top">
         <div class="container-fluid">
             <span class="navbar-brand mb-0 h1">App for Smart Electricity Meter</span>
+            <button id="installButton" class="btn btn-light install-btn d-none">
+                <i class="bi bi-download"></i>
+            </button>
         </div>
     </nav>
 
@@ -83,41 +86,39 @@
     <div id="page3" class="page-content">
         <div class="container">
             <div class="d-flex justify-content-between align-items-center mt-3">
-                <h5>Payment method:</h5>
+                <h5>Payment Type:</h5>
                 <div class="btn-group" role="group">
-                    <button type="button" 
-                            class="btn btn-outline-primary active" 
-                            data-payment-type="pre-payment"
-                            onclick="togglePayment(this, 'pre-payment')">
+                    <button type="button" class="btn btn-outline-primary active" 
+                            data-payment-type="pre-payment" onclick="togglePayment(this, 'pre-payment')">
                         Pre-payment
                     </button>
-                    <button type="button" 
-                            class="btn btn-outline-primary" 
-                            data-payment-type="pay-as-you-go"
-                            onclick="togglePayment(this, 'pay-as-you-go')">
+                    <button type="button" class="btn btn-outline-primary" 
+                            data-payment-type="pay-as-you-go" onclick="togglePayment(this, 'pay-as-you-go')">
                         Pay-as-you-go
                     </button>
                 </div>
             </div>
-            
-            <div id="payment-area" class="my-4"></div>
 
-            <div class="list-group">
+            <div class="list-group mt-3">
+                <!-- Hong Kong Payment Methods -->
                 <div class="list-group-item">
-                    <input class="form-check-input me-2" type="radio" name="payment" value="PayPal" checked>
-                    <img src="https://www.paypalobjects.com/webstatic/mktg/logo/pp_cc_mark_37x23.jpg" 
-                         class="payment-logo">
-                    PayPal
+                    <input class="form-check-input me-2" type="radio" name="payment" value="FPS" checked>
+                    <img src="fps-logo.png" class="payment-logo"> FPS
                 </div>
                 <div class="list-group-item">
-                    <input class="form-check-input me-2" type="radio" name="payment" value="Stripe">
-                    <img src="https://stripe.com/img/v3/home/social.png" class="payment-logo">
-                    Stripe
+                    <input class="form-check-input me-2" type="radio" name="payment" value="Octopus">
+                    <img src="octopus-logo.png" class="payment-logo"> Octopus
                 </div>
+                <!-- Add other payment methods similarly -->
             </div>
 
-            <button id="pay-button" class="btn btn-success w-100 mt-3 py-3" 
-                    onclick="handlePayment()">Pay with PayPal</button>
+            <div class="d-flex justify-content-between mt-4 mb-3">
+                <h4>Total:</h4>
+                <h4 id="totalAmount">$0.00</h4>
+            </div>
+
+            <button id="pay-button" class="btn btn-success w-100 btn-lg" 
+                    onclick="handlePayment()">Pay with FPS</button>
         </div>
     </div>
 
@@ -145,25 +146,45 @@
         </ul>
     </nav>
 
-    <!-- Bootstrap Icons -->
+    <!-- Dependencies -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://rawgit.com/schmich/instascan-builds/master/instascan.min.js"></script>
     <script>
-        let currentPage = 1;
+        let deferredPrompt;
         let scanner = null;
-        let isPrePayment = true;
+        let currentPaymentType = 'pre-payment';
+        let currentAmount = 0;
 
+        // PWA Installation
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            document.getElementById('installButton').classList.remove('d-none');
+        });
+
+        window.addEventListener('appinstalled', () => {
+            document.getElementById('installButton').classList.add('d-none');
+        });
+
+        document.getElementById('installButton').addEventListener('click', async () => {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                const { outcome } = await deferredPrompt.userChoice;
+                if (outcome === 'accepted') {
+                    document.getElementById('installButton').classList.add('d-none');
+                }
+                deferredPrompt = null;
+            }
+        });
+
+        // Page Navigation
         function showPage(pageNumber, linkElement) {
-            // Update navigation active state
             document.querySelectorAll('.nav-link').forEach(link => link.classList.remove('active'));
             linkElement.classList.add('active');
-            
-            // Switch pages
             document.querySelector('.active-page').classList.remove('active-page');
             document.getElementById(`page${pageNumber}`).classList.add('active-page');
             
-            // Handle scanner
             if(pageNumber === 2) startScanner();
             else if(scanner) {
                 scanner.stop();
@@ -172,58 +193,58 @@
             }
         }
 
+        // QR Scanner
         function startScanner() {
             scanner = new Instascan.Scanner({ 
                 video: document.getElementById('preview'),
                 mirror: false,
-                scanPeriod: 5,
                 facingMode: 'environment'
             });
             
-            scanner.addListener('scan', function(content) {
-                document.getElementById('scan-result').innerHTML = `
-                    <div class="alert alert-success">Scanned content: ${content}</div>
-                `;
+            scanner.addListener('scan', content => {
                 document.getElementById('electricity-info').innerHTML += `<br>Scanned: ${content}`;
-                document.getElementById('preview').style.display = 'none';
-                document.getElementById('scan-result').style.display = 'block';
+                scanner.stop();
+                showPage(1, document.querySelector('[onclick="showPage(1, this)"]'));
             });
 
             Instascan.Camera.getCameras().then(cameras => {
                 const backCamera = cameras.find(c => c.facing === 'environment');
                 if (backCamera) {
                     scanner.start(backCamera);
-                } else if (cameras.length > 0) {
-                    scanner.start(cameras[0]);
                 } else {
-                    alert('Camera access is required for scanning');
+                    alert('Back camera not found');
                 }
-            }).catch(error => {
-                console.error('Camera error:', error);
-                alert('Error accessing camera');
-            });
+            }).catch(console.error);
         }
 
+        // Payment Handling
         function togglePayment(button, type) {
-            // Update button group
             document.querySelectorAll('[data-payment-type]').forEach(btn => {
                 btn.classList.remove('active');
             });
             button.classList.add('active');
-            
-            // Update payment area
-            const paymentArea = document.getElementById('payment-area');
-            paymentArea.innerHTML = type === 'pre-payment' ?
-                '<input type="number" class="form-control form-control-lg" placeholder="Enter amount">' :
-                '<div class="display-1 text-center">$0.15/kWh</div>';
+            currentPaymentType = type;
+            updateTotal();
+        }
+
+        function updateTotal() {
+            const totalElement = document.getElementById('totalAmount');
+            if (currentPaymentType === 'pre-payment') {
+                const input = document.querySelector('input[type="number"]');
+                currentAmount = input ? parseFloat(input.value) || 0 : 0;
+                totalElement.textContent = `$${currentAmount.toFixed(2)}`;
+            } else {
+                currentAmount = 0.15; // Example rate
+                totalElement.textContent = `$${currentAmount.toFixed(2)}/kWh`;
+            }
         }
 
         function handlePayment() {
             const method = document.querySelector('input[name="payment"]:checked').value;
-            alert(`Processing payment with ${method}`);
+            alert(`Processing $${currentAmount.toFixed(2)} with ${method}`);
         }
 
-        // Initialize service worker
+        // Service Worker
         if('serviceWorker' in navigator) {
             navigator.serviceWorker.register('/sw.js');
         }
