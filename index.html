@@ -110,14 +110,14 @@
             
             <div id="payment-area" class="my-4"></div>
 
-            <div class="list-group mb-3">
+            <div class="list-group mb-0">
                 <div class="list-group-item">
                     <input class="form-check-input me-2" type="radio" name="payment" value="FPS" checked onchange="updatePayButton()">
                     <img src="https://miro.medium.com/v2/resize:fit:720/format:webp/1*eKZ-IVjg4CXq3Ax4iCtQPw.png" class="payment-logo"> FPS
                 </div>
                 <div class="list-group-item">
                     <input class="form-check-input me-2" type="radio" name="payment" value="Octopus" onchange="updatePayButton()">
-                    <img src="https://www.octopus.com.hk/en/business/merchant-support/branding-guideline/images/ocl-logo.png" class="payment-logo"> Octopus
+                    <img src="https://upload.wikimedia.org/wikipedia/en/a/ae/Octopus_Logo_%282017%29.png" class="payment-logo"> Octopus
                 </div>
                 <div class="list-group-item">
                     <input class="form-check-input me-2" type="radio" name="payment" value="PayMe" onchange="updatePayButton()">
@@ -163,27 +163,27 @@
 
     <!-- Bottom Navigation -->
     <nav class="nav-bottom">
-        <ul class="nav nav-pills justify-content-center py-2">
-            <li class="nav-item mx-2">
-                <a class="nav-link active" href="#" onclick="showPage(1, this)">
+        <ul class="nav nav-pills flex-column flex-sm-row justify-content-center py-2">
+            <li class="nav-item mx-1 flex-fill">
+                <a class="nav-link active text-center py-3" href="#" onclick="showPage(1, this)">
                     <i class="bi bi-lightning-charge"></i>
                     <span class="d-none d-sm-inline">Electricity</span>
                 </a>
             </li>
-            <li class="nav-item mx-2">
-                <a class="nav-link" href="#" onclick="showPage(2, this)">
+            <li class="nav-item mx-1 flex-fill">
+                <a class="nav-link text-center py-3" href="#" onclick="showPage(2, this)">
                     <i class="bi bi-qr-code-scan"></i>
                     <span class="d-none d-sm-inline">Scan</span>
                 </a>
             </li>
-            <li class="nav-item mx-2">
-                <a class="nav-link" href="#" onclick="showPage(3, this)">
+            <li class="nav-item mx-1 flex-fill">
+                <a class="nav-link text-center py-3" href="#" onclick="showPage(3, this)">
                     <i class="bi bi-credit-card"></i>
                     <span class="d-none d-sm-inline">Payment</span>
                 </a>
             </li>
         </ul>
-    </nav>
+    </nav>      
 
     <!-- Bootstrap Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">

@@ -12,7 +12,7 @@ const ASSETS = [
     'https://unpkg.com/@zxing/library@0.18.6/umd/index.min.js',
     // Payment logos
     'https://miro.medium.com/v2/resize:fit:720/format:webp/1*eKZ-IVjg4CXq3Ax4iCtQPw.png',
-    'https://www.octopus.com.hk/en/business/merchant-support/branding-guideline/images/ocl-logo.png',
+    'https://upload.wikimedia.org/wikipedia/en/a/ae/Octopus_Logo_%282017%29.png',
     'https://upload.wikimedia.org/wikipedia/commons/4/4c/PayMe_from_HSBC_wordmark.svg',
     'https://www.logo.wine/a/logo/Alipay/Alipay-Logo.wine.svg',
     'https://upload.wikimedia.org/wikipedia/commons/7/7a/WeChat_Pay.png',

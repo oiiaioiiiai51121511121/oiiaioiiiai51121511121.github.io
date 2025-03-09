@@ -1,6 +1,6 @@
 {
-    "name": "Electricity PWA",
-    "short_name": "ElecPWA",
+    "name": "SmartWatt",
+    "short_name": "SmartWatt",
     "start_url": "/index.html",
     "scope": "/",
     "display": "standalone",
