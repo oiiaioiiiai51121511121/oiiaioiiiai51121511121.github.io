@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Energy Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <style>
+        .card-header { background-color: #f8f9fa; }
+        .consumption-card { background: linear-gradient(45deg, #e3f2fd, #bbdefb); }
+        .alert-card { height: 100%; }
+        .chart-placeholder { height: 300px; background: #f5f5f5; display: flex; align-items: center; justify-content: center; }
+    </style>
+</head>
+<body class="bg-light">
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary fixed-top">
+        <div class="container">
+            <a class="navbar-brand" href="#"><i class="bi bi-lightning-charge"></i> SmartEnergy</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item"><a class="nav-link" href="#"><i class="bi bi-house-door"></i> Dashboard</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#"><i class="bi bi-graph-up"></i> Trends</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#"><i class="bi bi-gear"></i> Settings</a></li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container pt-5 mt-5">
+        <!-- Real-time Stats Row -->
+        <div class="row g-4 mb-4">
+            <div class="col-md-4">
+                <div class="card consumption-card">
+                    <div class="card-body text-center">
+                        <h5><i class="bi bi-lightning-charge text-warning"></i> Current Usage</h5>
+                        <h2 class="display-4">2.4 kW</h2>
+                        <p class="text-muted">≈ $0.18/hr</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-body text-center">
+                        <h5><i class="bi bi-currency-dollar text-success"></i> Daily Cost</h5>
+                        <h2 class="display-4">$4.32</h2>
+                        <p class="text-muted">12 kWh today</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-body text-center">
+                        <h5><i class="bi bi-globe text-primary"></i> Carbon Footprint</h5>
+                        <h2 class="display-4">18 kg</h2>
+                        <p class="text-muted">CO₂ today</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="row g-4">
+            <!-- Energy Chart -->
+            <div class="col-lg-8">
+                <div class="card">
+                    <div class="card-header">Energy Consumption</div>
+                    <div class="card-body">
+                        <div class="chart-placeholder">
+                            <p class="text-muted">24h Consumption Chart (Integrate Chart.js here)</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Alerts & Tips -->
+            <div class="col-lg-4">
+                <div class="card alert-card">
+                    <div class="card-header">Alerts & Recommendations</div>
+                    <div class="card-body">
+                        <div class="list-group">
+                            <a href="#" class="list-group-item list-group-item-action">
+                                <i class="bi bi-exclamation-triangle text-danger"></i> 
+                                High usage detected (12kW peak)
+                            </a>
+                            <a href="#" class="list-group-item list-group-item-action">
+                                <i class="bi bi-bulb text-success"></i>
+                                Switch to off-peak hours to save 15%
+                            </a>
+                            <a href="#" class="list-group-item list-group-item-action">
+                                <i class="bi bi-sun text-warning"></i>
+                                Solar production: 8.2kWh today
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sustainability Section -->
+        <div class="row mt-4 g-4">
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-body">
+                        <h5><i class="bi bi-tree"></i> Eco Score</h5>
+                        <div class="progress mt-3" style="height: 30px;">
+                            <div class="progress-bar bg-success" style="width: 75%">75/100</div>
+                        </div>
+                        <p class="mt-2 text-muted">Better than 80% of similar homes</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-body">
+                        <h5><i class="bi bi-solar-panel"></i> Solar Contribution</h5>
+                        <h2 class="display-5 mt-3">64%</h2>
+                        <p class="text-muted">Of today's energy from solar</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-body">
+                        <h5><i class="bi bi-clock-history"></i> Peak Usage</h5>
+                        <h2 class="display-5 mt-3">3-7 PM</h2>
+                        <p class="text-muted">Highest consumption period</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bottom Navigation (Mobile) -->
+    <nav class="nav-bottom fixed-bottom d-lg-none bg-white border-top">
+        <ul class="nav nav-pills justify-content-center py-2 row w-100 m-0">
+            <li class="nav-item col-4 px-0">
+                <a class="nav-link active text-center" href="#">
+                    <i class="bi bi-house-door"></i>
+                    <span class="d-none d-sm-inline">Home</span>
+                </a>
+            </li>
+            <li class="nav-item col-4 px-0">
+                <a class="nav-link text-center" href="#">
+                    <i class="bi bi-graph-up"></i>
+                    <span class="d-none d-sm-inline">Stats</span>
+                </a>
+            </li>
+            <li class="nav-item col-4 px-0">
+                <a class="nav-link text-center" href="#">
+                    <i class="bi bi-person"></i>
+                    <span class="d-none d-sm-inline">Account</span>
+                </a>
+            </li>
+        </ul>
+    </nav>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
