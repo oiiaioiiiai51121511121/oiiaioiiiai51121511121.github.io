@@ -53,7 +53,7 @@
         /* New sticky payment section */
         .sticky-payment {
             position: fixed;
-            bottom: 72px;
+            bottom: 78px;
             left: 0;
             right: 0;
             background: white;
@@ -71,7 +71,8 @@
         <div class="container-fluid">
             <span class="navbar-brand mb-0 h1">SmartWatt</span>
             <button id="install-button" class="btn btn-light" style="display: none;">
-                <i class="bi bi-download"></i> Install
+                <i class="bi bi-download"></i>
+                <span class="d-none d-sm-inline">Install</span>
             </button>
         </div>
     </nav>
@@ -168,25 +169,25 @@
     <nav class="nav-bottom">
         <ul class="nav nav-pills justify-content-center py-2 row w-100 m-0">
             <li class="nav-item col-4 px-0">
-                <a class="nav-link active text-center" onclick="showPage(1, this)">
+                <a class="nav-link active text-center p-3 fs-5" onclick="showPage(1, this)">
                     <i class="bi bi-lightning-charge"></i>
                     <span class="d-none d-sm-inline">Electricity</span>
                 </a>
             </li>
             <li class="nav-item col-4 px-0">
-                <a class="nav-link text-center" onclick="showPage(2, this)">
+                <a class="nav-link text-center p-3 fs-5" onclick="showPage(2, this)">
                     <i class="bi bi-qr-code-scan"></i>
                     <span class="d-none d-sm-inline">Scan</span>
                 </a>
             </li>
             <li class="nav-item col-4 px-0">
-                <a class="nav-link text-center" onclick="showPage(3, this)">
+                <a class="nav-link text-center p-3 fs-5" onclick="showPage(3, this)">
                     <i class="bi bi-credit-card"></i>
                     <span class="d-none d-sm-inline">Payment</span>
                 </a>
             </li>
         </ul>
-    </nav>   
+    </nav>  
 
     <!-- Bootstrap Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
