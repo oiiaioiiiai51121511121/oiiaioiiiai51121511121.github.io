@@ -50,7 +50,6 @@
             width: 40px;
             margin-right: 10px;
         }
-        /* New sticky payment section */
         .sticky-payment {
             position: fixed;
             bottom: 78px;
@@ -90,6 +89,40 @@
             0% { background-color: #28a745; }
             50%, 100% { background-color: #e6f4ea; }
         }
+
+        /* Scan Notification Styles */
+        .scan-notification {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.5s ease;
+            background: white;
+            text-align: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .scan-notification.show {
+            max-height: 100px;
+        }
+        .notification-content {
+            padding: 1rem;
+        }
+        .progress-spinner {
+            width: 40px;
+            height: 40px;
+            margin: 10px auto;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #007bff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        #notificationText {
+            font-weight: 500;
+            color: #333;
+            margin-bottom: 8px;
+        }
     </style>
 </head>
 <body>
@@ -97,7 +130,7 @@
     <nav class="navbar navbar-dark bg-primary header-top">
         <div class="container-fluid">
             <span class="navbar-brand mb-0 h1">
-                <img src="logo-1024.svg" height="20" class="d-inline-block align-top" alt="Logo">
+                <img src="logo-1024.svg" height="24" class="d-inline-block align-top" alt="Logo">
                 SmartWatt
             </span>
             <button id="install-button" class="btn btn-light" style="display: none;">
@@ -109,6 +142,12 @@
 
     <!-- Pages -->
     <div id="page1" class="page-content active-page">
+        <div class="scan-notification" id="scanNotification">
+            <div class="notification-content">
+                <div id="notificationText">Uploading...</div>
+                <div class="progress-spinner"></div>
+            </div>
+        </div>
         <div class="container" style="padding-bottom: 96px;">
             <div class="row g-4 mb-4">
                 <!-- Real-time Stats -->
@@ -175,18 +214,6 @@
                     </div>
                 </div>
             </div>
-
-            <div class="row mt-1">
-                <div class="col-12">
-                    <div class="card expandable-card mt-3" id="log-card" onclick="toggleFullscreen(this);this.classList.remove('mt-3')">
-                        <div class="card-body">
-                            <h5><i class="bi bi-info-circle"></i>Log</h5>
-                            <div id="electricity-info">
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
         </div>
     </div>
 
@@ -199,9 +226,9 @@
     </div>
 
     <div id="page3" class="page-content">
-        <div class="container" style="padding-bottom: 216px;"> <!-- Added padding for sticky -->
+        <div class="container" style="padding-bottom: 216px;">
             <h5 class="mt-3">Payment method:</h5>
-            <div class="btn-group w-100 mb-3" role="group"> <!-- Full width button group -->
+            <div class="btn-group w-100 mb-3" role="group">
                 <button type="button" 
                         class="btn btn-outline-primary active flex-grow-1" 
                         data-payment-type="pre-payment"
@@ -258,7 +285,6 @@
             </div>
         </div>
 
-        <!-- Sticky payment section -->
         <div class="sticky-payment">
             <div id="total-section" class="d-flex justify-content-between align-items-center mb-2">
                 <h5 class="mb-0">Total:</h5>
@@ -355,9 +381,9 @@
             };
             codeReader.decodeFromConstraints(constraints, videoElement, (result, err) => {
                 if (result) {
-                    document.getElementById('electricity-info').innerHTML += `<p class="mb-0">${result.text}</p>`;
+                    showScanNotification(result.text);
                     codeReader.reset();
-                    showPage(1, document.querySelector('.nav-link')); // Jump to electricity page
+                    showPage(1, document.querySelector('.nav-link'));
                 }
                 if (err && !(err instanceof ZXing.NotFoundException)) {
                     console.error(err);
@@ -365,6 +391,36 @@
             }).catch(err => {
                 console.error('Error starting scanner:', err);
             });
+        }
+
+        function showScanNotification(scannedText) {
+            const notification = document.getElementById('scanNotification');
+            const notificationText = document.getElementById('notificationText');
+            const progressSpinner = document.querySelector('.progress-spinner');
+            
+            // Reset notification state
+            notificationText.innerHTML = 'Uploading...';
+            progressSpinner.style.display = 'block';
+            
+            // Show notification
+            notification.classList.add('show');
+            
+            setTimeout(() => {
+                // Update to success state after 3 seconds
+                notificationText.innerHTML = '<i class="bi bi-check-circle-fill text-success me-2"></i>Finish!';
+                progressSpinner.style.display = 'none';
+            }, 3000);
+
+            setTimeout(() => {
+                // Hide notification after total 7 seconds
+                notification.classList.remove('show');
+                
+                // Reset notification content after animation
+                setTimeout(() => {
+                    notificationText.innerHTML = 'Uploading...';
+                    progressSpinner.style.display = 'block';
+                }, 500); // Match transition duration
+            }, 7000);
         }
 
         // Initialize chart
@@ -390,35 +446,7 @@
             }
         });
 
-        function toggleFullscreen(card) {
-            isFullscreen = !isFullscreen;
-            card.classList.toggle('fullscreen-card', isFullscreen);
-            if(isFullscreen) {
-                electricityInfoContent = document.getElementById('electricity-info').innerHTML;
-                card.innerHTML = `
-                    <div class="card-header d-flex justify-content-between">
-                        <h5><i class="bi bi-info-circle"></i>Log</h5>
-                        <button class="btn btn-sm btn-danger" onclick="toggleFullscreen(this.closest('.card'));document.getElementById('log-card').classList.add('mt-3')">
-                            <i class="bi bi-x-lg"></i>
-                        </button>
-                    </div>
-                    <div class="card-body">
-                        ${electricityInfoContent}
-                    </div>
-                `;
-            } else {
-                card.innerHTML = `
-                    <div class="card-body">
-                        <h5><i class="bi bi-info-circle"></i>Log</h5>
-                        <div id="electricity-info">
-                            ${electricityInfoContent}
-                        </div>
-                    </div>
-                `;
-            }
-        }
-
-        // Modified payment functions
+        // Payment functions
         function togglePayment(button, type) {
             document.querySelectorAll('[data-payment-type]').forEach(btn => btn.classList.remove('active'));
             button.classList.add('active');
@@ -447,7 +475,7 @@
         }
 
         async function handlePayment() {
-            const paymentArea = document.querySelector('#page3 .container');
+            const paymentArea = document.getElementById('payment-area');
             const originalContent = paymentArea.innerHTML;
             const method = document.querySelector('input[name="payment"]:checked').value;
             
@@ -472,7 +500,7 @@
         }
 
         function resetPaymentPage() {
-            document.querySelector('#page3 .container').innerHTML = originalPaymentContent;
+            document.getElementById('payment-area').innerHTML = '';
             togglePayment(document.querySelector('[data-payment-type="pre-payment"]'), 'pre-payment');
             updatePayButton();
         }
