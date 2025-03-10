@@ -386,7 +386,6 @@
         document.addEventListener('DOMContentLoaded', function() {
             const ctx = document.getElementById('consumptionChart');
             
-            // Initialize chart
             consumptionChart = new Chart(ctx, {
                 type: 'bar',
                 data: {
@@ -394,11 +393,20 @@
                     datasets: [{
                         label: 'Energy Consumption (kWh)',
                         data: [],
-                        backgroundColor: 'rgba(54, 162, 235, 0.5)'
+                        backgroundColor: [],
+                        borderWidth: 1
                     }]
                 },
                 options: {
                     responsive: true,
+                    plugins: {
+                        legend: { display: true },
+                        tooltip: { enabled: true },
+                        title: {
+                            display: true,
+                            position: 'top'
+                        }
+                    },
                     scales: {
                         y: {
                             beginAtZero: true,
@@ -408,7 +416,6 @@
                 }
             });
 
-            // Load and process CSV
             fetch('power_consumption.csv')
                 .then(response => response.text())
                 .then(csvText => {
@@ -417,44 +424,78 @@
                     
                     let lastDate = null;
                     const hourlyConsumption = new Array(24).fill(0);
+                    let minTime = null;
+                    let maxTime = null;
 
-                    // First pass: Find the latest date
+                    // First pass: Find latest date
                     rows.forEach(row => {
                         const cells = row.split(';');
                         if (cells.length < 9) return;
-
-                        const [day, month, year] = cells[0].split('/').map(Number);
-                        const currentDate = new Date(year, month - 1, day);
-                        
+                        const [d, m, y] = cells[0].split('/').map(Number);
+                        const currentDate = new Date(y, m-1, d);
                         if (!lastDate || currentDate > lastDate) {
                             lastDate = currentDate;
-                            fetchedDate = cells[0]; // Store original date string
+                            fetchedDate = cells[0];
                         }
                     });
 
-                    // Second pass: Aggregate data for the latest date
+                    // Second pass: Process data and track times
                     rows.forEach(row => {
                         const cells = row.split(';');
                         if (cells.length < 9 || cells[0] !== fetchedDate) return;
 
-                        const time = cells[1];
-                        const power = parseFloat(cells[2]);
-                        const hour = parseInt(time.split(':')[0], 10);
+                        // Parse datetime
+                        const [day, month, year] = cells[0].split('/').map(Number);
+                        const [h, m, s] = cells[1].split(':').map(Number);
+                        const currentDateTime = new Date(year, month-1, day, h, m, s);
 
+                        // Update time range
+                        if (!minTime || currentDateTime < minTime) minTime = currentDateTime;
+                        if (!maxTime || currentDateTime > maxTime) maxTime = currentDateTime;
+
+                        // Aggregate consumption
+                        const power = parseFloat(cells[2]);
+                        const hour = h;
                         if (!isNaN(hour) && !isNaN(power)) {
-                            hourlyConsumption[hour] += power * (1/60); // Convert kW to kWh
+                            hourlyConsumption[hour] += power * (1/60);
                         }
                     });
 
+                    // Find peak hours
+                    const maxConsumption = Math.max(...hourlyConsumption);
+                    const peakHours = hourlyConsumption
+                        .map((v, i) => v === maxConsumption ? i : null)
+                        .filter(v => v !== null);
+
+                    // Format time range
+                    const formatTime = date => {
+                        const pad = n => String(n).padStart(2, '0');
+                        return `${pad(date.getDate())}/${pad(date.getMonth()+1)}/${date.getFullYear()} ` +
+                            `${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
+                    };
+
+                    const timeRange = `${formatTime(minTime)} - ${formatTime(maxTime)}`;
+
+                    // Create color array
+                    const backgroundColors = hourlyConsumption.map((v, hour) => 
+                        peakHours.includes(hour) 
+                            ? 'rgba(246, 241, 160, 1.0)'  // Red for peaks
+                            : 'rgba(54, 162, 235, 0.5)'  // Blue for normal
+                    );
+
                     // Update chart
                     consumptionChart.data.datasets[0].data = hourlyConsumption;
+                    consumptionChart.data.datasets[0].backgroundColor = backgroundColors;
+                    consumptionChart.options.plugins.title = {
+                        display: true,
+                        text: [
+                            `Peak Hours: ${peakHours.map(h => `${h}:00`).join(', ')}`,
+                            `Time Range: ${timeRange}`
+                        ]
+                    };
                     consumptionChart.update();
                 })
                 .catch(error => console.error('Error:', error));
-        });
-
-        window.addEventListener("load", (event) => {
-            document.getElementById('dashboardGraphTitle').innerText += ` on ${fetchedDate}`;
         });
 
         function showPage(pageNumber, linkElement) {
