@@ -195,7 +195,7 @@
                 <!-- Energy Chart -->
                 <div class="col-lg-8">
                     <div class="card">
-                        <div class="card-header">Energy Consumption</div>
+                        <div class="card-header">Today's Energy Consumption</div>
                         <div class="card-body">
                             <canvas id="consumptionChart"></canvas>
                         </div>
@@ -348,6 +348,7 @@
         let paymentPrePay = -29.50;
         let paymentNowPay = 29.50;
         let tempNum = 0;
+        let consumptionChart;
 
         // PWA Install Button Logic
         window.addEventListener('beforeinstallprompt', (e) => {
@@ -370,6 +371,72 @@
         window.addEventListener('appinstalled', () => {
             document.getElementById('install-button').style.display = 'none';
         });
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const ctx = document.getElementById('consumptionChart');
+            
+            // Initialize chart with empty data
+            consumptionChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: Array.from({length: 24}, (_, i) => `${i}:00`),
+                    datasets: [{
+                        label: 'Energy Consumption (kWh)',
+                        data: [],
+                        backgroundColor: 'rgba(54, 162, 235, 0.5)'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'kWh'
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Load and process CSV data
+            fetch('power_consumption.csv')
+                .then(response => response.text())
+                .then(csvText => {
+                    const rows = csvText.trim().split('\n');
+                    const header = rows.shift().split(';'); // Remove header row
+                    
+                    // Initialize hourly consumption array
+                    const hourlyConsumption = new Array(24).fill(0);
+                    let targetDate = null;
+
+                    rows.forEach(row => {
+                        const cells = row.split(';');
+                        if (cells.length < 9) return;
+
+                        const date = cells[0];
+                        const time = cells[1];
+                        const power = parseFloat(cells[2]);
+
+                        // Set target date from first row
+                        if (!targetDate) targetDate = date;
+                        if (date !== targetDate) return;
+
+                        const hour = parseInt(time.split(':')[0], 10);
+                        if (!isNaN(hour) && !isNaN(power)) {
+                            // Convert kW to kWh (assuming 1-minute interval measurements)
+                            hourlyConsumption[hour] += power * (1/60);
+                        }
+                    });
+
+                    // Update chart with real data
+                    consumptionChart.data.datasets[0].data = hourlyConsumption;
+                    consumptionChart.update();
+                })
+                .catch(error => console.error('Error loading CSV:', error));
+        });
+
 
         function showPage(pageNumber, linkElement) {
             document.querySelectorAll('.nav-link').forEach(link => link.classList.remove('active'));
@@ -445,29 +512,6 @@
                 }, 500); // Match transition duration
             }, 7000);
         }
-
-        // Initialize chart
-        const ctx = document.getElementById('consumptionChart');
-        new Chart(ctx, {
-            type: 'bar',
-            data: {
-                labels: Array.from({length: 24}, (_, i) => `${i}:00`),
-                datasets: [{
-                    label: 'Energy Consumption (kW)',
-                    data: [2.4, 2.1, 1.8, 1.6, 1.5, 1.6, 2.0, 3.1, 4.2, 5.0, 5.5, 6.0,
-                           6.2, 5.8, 5.5, 5.2, 5.8, 6.5, 7.0, 6.8, 6.0, 4.5, 3.2, 2.4],
-                    backgroundColor: 'rgba(54, 162, 235, 0.5)'
-                }]
-            },
-            options: {
-                responsive: true,
-                scales: {
-                    y: {
-                        beginAtZero: true
-                    }
-                }
-            }
-        });
 
         // Payment functions
         function togglePayment(button, type) {
