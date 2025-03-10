@@ -472,12 +472,13 @@
             if (type === 'pre-payment') {
                 paymentArea.innerHTML = '<input type="number" class="form-control form-control-lg" placeholder="Amount in HKD$">';
                 input = paymentArea.querySelector('input').value;
-                if (input) {
+                if (input != '') {
                     input = Math.floor(Number(input) * 100) / 100;
                 } else {
                     input = 0;
                 }
                 paymentArea.querySelector('input').addEventListener('input', () => {
+                    input = paymentArea.querySelector('input').value;
                     document.getElementById('total-section').innerHTML = `
                         <div>
                             <div class="text-muted small">Current Balance: $${paymentPrePay.toFixed(2)}</div>
