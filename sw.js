@@ -11,6 +11,7 @@ const ASSETS = [
     'https://fonts.googleapis.com/css2?family=Dosis:wght@400;500;600&display=swap',
     'https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css',
     'https://unpkg.com/@zxing/library@0.18.6/umd/index.min.js',
+    'https://cdn.jsdelivr.net/npm/chart.js',
     // Payment logos
     'https://miro.medium.com/v2/resize:fit:720/format:webp/1*eKZ-IVjg4CXq3Ax4iCtQPw.png',
     'https://upload.wikimedia.org/wikipedia/en/a/ae/Octopus_Logo_%282017%29.png',
@@ -43,5 +44,6 @@ self.addEventListener('activate', event => {
         caches.keys().then(keys => Promise.all(
             keys.filter(key => key !== CACHE_NAME)
                 .map(key => caches.delete(key))
+        ))
     );
 });
