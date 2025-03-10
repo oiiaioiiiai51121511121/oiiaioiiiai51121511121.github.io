@@ -109,7 +109,7 @@
 
     <!-- Pages -->
     <div id="page1" class="page-content active-page">
-        <div class="container">
+        <div class="container" style="padding-bottom: 216px;">
             <div class="row g-4 mb-4">
                 <!-- Real-time Stats -->
                 <div class="col-md-4">
@@ -181,8 +181,8 @@
                 <div class="col-12">
                     <div class="card expandable-card mt-3" onclick="toggleFullscreen(this)">
                         <div class="card-body">
-                            <h5><i class="bi bi-info-circle"></i> Electricity Information</h5>
-                            <p class="mb-0">hello this is the electricity information page!</p>
+                            <h5><i class="bi bi-info-circle"></i>Log</h5>
+                            <p class="mb-0" id="electricity-info"></p>
                         </div>
                     </div>
                 </div>
@@ -354,10 +354,7 @@
             };
             codeReader.decodeFromConstraints(constraints, videoElement, (result, err) => {
                 if (result) {
-                    document.getElementById('scan-result').innerHTML = `
-                        <div class="alert alert-success">Scanned content: ${result.text}</div>
-                    `;
-                    document.getElementById('electricity-info').innerHTML += `<br>Scanned: ${result.text}`;
+                    document.getElementById('electricity-info').innerText += `\n${result.text}`;
                     codeReader.reset();
                     showPage(1, document.querySelector('.nav-link')); // Jump to electricity page
                 }
