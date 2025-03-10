@@ -182,7 +182,8 @@
                     <div class="card expandable-card mt-3" onclick="toggleFullscreen(this)">
                         <div class="card-body">
                             <h5><i class="bi bi-info-circle"></i>Log</h5>
-                            <p class="mb-0" id="electricity-info"></p>
+                            <div id="electricity-info">
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -354,7 +355,7 @@
             };
             codeReader.decodeFromConstraints(constraints, videoElement, (result, err) => {
                 if (result) {
-                    document.getElementById('electricity-info').innerText += `\n${result.text}`;
+                    document.getElementById('electricity-info').innerHTML += `<p class="mb-0">${result.text}</p>`;
                     codeReader.reset();
                     showPage(1, document.querySelector('.nav-link')); // Jump to electricity page
                 }
