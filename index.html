@@ -394,9 +394,9 @@
             };
             codeReader.decodeFromConstraints(constraints, videoElement, (result, err) => {
                 if (result) {
-                    showScanNotification(result.text);
                     codeReader.reset();
                     showPage(1, document.querySelector('.nav-link'));
+                    showScanNotification(result.text);
                 }
                 if (err && !(err instanceof ZXing.NotFoundException)) {
                     console.error(err);
@@ -416,8 +416,10 @@
             progressSpinner.style.display = 'block';
             
             // Show notification
-            notification.classList.remove('hide');
-            notification.classList.add('show');
+            setTimeout(() => {
+                notification.classList.remove('hide');
+                notification.classList.add('show');
+            }, 500); // Match transition duration
             
             setTimeout(() => {
                 // Update to success state after 3 seconds
