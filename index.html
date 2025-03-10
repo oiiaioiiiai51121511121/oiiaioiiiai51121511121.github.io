@@ -50,15 +50,6 @@
             width: 40px;
             margin-right: 10px;
         }
-        .sticky-payment {
-            position: fixed;
-            bottom: 78px;
-            left: 0;
-            right: 0;
-            background: white;
-            padding: 15px 20px;
-            box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
-        }
         .nav-link {
             cursor: pointer;
         }
@@ -122,6 +113,15 @@
             font-weight: 500;
             color: #333;
             margin-bottom: 8px;
+        }
+        #payment-checkout {
+            position: fixed;
+            bottom: 78px;
+            left: 0;
+            right: 0;
+            background: white;
+            padding: 15px 20px;
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
         }
     </style>
 </head>
@@ -245,7 +245,7 @@
             
             <div id="payment-area" class="my-4"></div>
 
-            <div class="list-group mb-0">
+            <div id="payment-option" class="list-group mb-0">
                 <div class="list-group-item">
                     <input class="form-check-input me-2" type="radio" name="payment" value="FPS" checked onchange="updatePayButton()">
                     <img src="https://miro.medium.com/v2/resize:fit:720/format:webp/1*eKZ-IVjg4CXq3Ax4iCtQPw.png" class="payment-logo"> FPS
@@ -285,7 +285,7 @@
             </div>
         </div>
 
-        <div class="sticky-payment">
+        <div id="payment-checkout">
             <div id="total-section" class="d-flex justify-content-between align-items-center mb-2">
                 <h5 class="mb-0">Total:</h5>
                 <h5 class="mb-0" id="total-amount">$0.00</h5>
@@ -479,10 +479,12 @@
             const originalContent = paymentArea.innerHTML;
             const method = document.querySelector('input[name="payment"]:checked').value;
             
+            document.getElementById('payment-option').style.display = 'none';
+            document.getElementById('payment-checkout').style.display = 'none';
+
             paymentArea.innerHTML = `
                 <div class="text-center py-5">
-                    <div class="dot-flashing"></div>
-                    <h4 class="mt-3">Processing payment with ${method}</h4>
+                    <h4 class="mt-3"><span class="dot-flashing"></span>Processing payment with ${method}...</h4>
                 </div>
             `;
             
@@ -491,7 +493,7 @@
                     <div class="text-center py-5">
                         <i class="bi bi-check-circle-fill text-success" style="font-size: 4rem;"></i>
                         <h2 class="mt-3">Payment Successful!</h2>
-                        <button class="btn btn-link mt-3" onclick="resetPaymentPage()">
+                        <button class="btn btn-secondary mt-3" onclick="resetPaymentPage()">
                             <i class="bi bi-arrow-left"></i> Back to Payments
                         </button>
                     </div>
@@ -499,8 +501,15 @@
             }, 5000);
         }
 
+        function updatePayButton() {
+            const method = document.querySelector('input[name="payment"]:checked').value;
+            document.getElementById('pay-button').textContent = `Pay with ${method}`;
+        }
+
         function resetPaymentPage() {
             document.getElementById('payment-area').innerHTML = '';
+            document.getElementById('payment-option').style.display = 'block';
+            document.getElementById('payment-checkout').style.display = 'block';
             togglePayment(document.querySelector('[data-payment-type="pre-payment"]'), 'pre-payment');
             updatePayButton();
         }
