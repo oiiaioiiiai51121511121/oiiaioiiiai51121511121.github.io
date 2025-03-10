@@ -249,6 +249,8 @@
                         Pay-as-you-go
                     </button>
                 </div>
+
+                <div id="payment-input"></div>
             
                 <div class="list-group mb-0">
                     <div class="list-group-item">
@@ -293,6 +295,9 @@
 
         <div id="payment-checkout">
             <div id="total-section" class="d-flex justify-content-between align-items-center mb-2">
+                <div class="text-muted small">Current Balance: $0.00</div>
+                <div class="text-muted small">New Balance: $0.00</div>
+                <hr>
                 <h5 class="mb-0">Total:</h5>
                 <h5 class="mb-0" id="total-amount">$0.00</h5>
             </div>
@@ -457,25 +462,27 @@
             document.querySelectorAll('[data-payment-type]').forEach(btn => btn.classList.remove('active'));
             button.classList.add('active');
             
-            const paymentArea = document.getElementById('payment-result');
+            const paymentArea = document.getElementById('payment-input');
             if (type === 'pre-payment') {
                 paymentArea.innerHTML = '<input type="number" class="form-control form-control-lg" placeholder="Enter amount">';
                 const input = paymentArea.querySelector('input');
                 input.addEventListener('input', () => {
-                    document.getElementById('total-amount').innerHTML = `
-                        <div class="text-muted small">Current Balance: $50.00</div>
-                        <div class="text-muted small">New Balance: $${(50 - (input.value || 0)).toFixed(2)}</div>
+                    document.getElementById('total-section').innerHTML = `
+                        <div class="text-muted small">Current Balance: $0.00</div>
+                        <div class="text-muted small">New Balance: $0.00</div>
                         <hr>
-                        <div>$${input.value || '0.00'}</div>
+                        <h5 class="mb-0">Total:</h5>
+                        <h5 class="mb-0" id="total-amount">$${input.value || '0.00'}</h5>
                     `;
                 });
             } else {
                 paymentArea.innerHTML = '<div class="display-1 text-center">$0.15/kWh</div>';
-                document.getElementById('total-amount').innerHTML = `
-                    <div class="text-muted small">Current Balance: $50.00</div>
-                    <div class="text-muted small">New Balance: $50.00</div>
+                document.getElementById('total-section').innerHTML = `
+                    <div class="text-muted small">Current Balance: $0.00</div>
+                    <div class="text-muted small">New Balance: $0.00</div>
                     <hr>
-                    <div>$0.15/kWh</div>
+                    <h5 class="mb-0">Total:</h5>
+                    <h5 class="mb-0" id="total-amount">$0.00</h5>
                 `;
             }
         }
