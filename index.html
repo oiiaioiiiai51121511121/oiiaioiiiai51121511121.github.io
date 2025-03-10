@@ -14,6 +14,12 @@
             font-family: 'Dosis', sans-serif;
             padding-top: 56px;
         }
+        .dashboardInsightDanger {
+            background-color: #f8d7da;
+        }
+        .dashboardInsightWarning {
+            background-color: #fff3cd;
+        }
         .scan-overlay {
             position: absolute;
             top: 50%;
@@ -208,17 +214,21 @@
                         <div class="card-header">Insights</div>
                         <div class="card-body">
                             <div class="list-group">
-                                <a class="list-group-item list-group-item-action">
-                                    <i class="bi bi-exclamation-triangle text-danger"></i> 
-                                    High usage detected (12kW peak)
+                                <a class="list-group-item list-group-item-action dashboardInsightDanger">
+                                    <i class="bi bi-exclamation-octagon text-danger me-2"></i>
+                                    Overvoltage detected!
+                                </a>
+                                <a class="list-group-item list-group-item-action dashboardInsightWarning">
+                                    <i class="bi bi-exclamation-triangle text-warning me-2"></i>
+                                    High usage detected: 12kW peak
                                 </a>
                                 <a class="list-group-item list-group-item-action">
-                                    <i class="bi bi-lightbulb text-success"></i>
-                                    Switch to off-peak hours to save 15%
+                                    <i class="bi bi-lightbulb text-primary me-2"></i>
+                                    Peak-hours: switch off to save 12%
                                 </a>
                                 <a class="list-group-item list-group-item-action">
-                                    <i class="bi bi-sun text-warning"></i>
-                                    Solar production: 8.2kWh today
+                                    <i class="bi bi-check-circle text-success me-2"></i>
+                                    Electricity meter is online
                                 </a>
                             </div>
                         </div>
@@ -441,10 +451,11 @@
                     consumptionChart.update();
                 })
                 .catch(error => console.error('Error:', error));
-            
-            document.getElementById('dashboardGraphTitle').innerText += ` on ${fetchedDate}`;
         });
 
+        window.addEventListener("load", (event) => {
+            document.getElementById('dashboardGraphTitle').innerText += ` on ${fetchedDate}`;
+        });
 
         function showPage(pageNumber, linkElement) {
             document.querySelectorAll('.nav-link').forEach(link => link.classList.remove('active'));
