@@ -195,7 +195,7 @@
                 <!-- Energy Chart -->
                 <div class="col-lg-8">
                     <div class="card">
-                        <div class="card-header">Today's Energy Consumption</div>
+                        <div class="card-header" id="dashboardGraphTitle">Energy Consumption</div>
                         <div class="card-body">
                             <canvas id="consumptionChart"></canvas>
                         </div>
@@ -349,6 +349,7 @@
         let paymentNowPay = 29.50;
         let tempNum = 0;
         let consumptionChart;
+        let fetchedDate = '';
 
         // PWA Install Button Logic
         window.addEventListener('beforeinstallprompt', (e) => {
@@ -375,7 +376,7 @@
         document.addEventListener('DOMContentLoaded', function() {
             const ctx = document.getElementById('consumptionChart');
             
-            // Initialize chart with empty data
+            // Initialize chart
             consumptionChart = new Chart(ctx, {
                 type: 'bar',
                 data: {
@@ -391,50 +392,57 @@
                     scales: {
                         y: {
                             beginAtZero: true,
-                            title: {
-                                display: true,
-                                text: 'kWh'
-                            }
+                            title: { display: true, text: 'kWh' }
                         }
                     }
                 }
             });
 
-            // Load and process CSV data
+            // Load and process CSV
             fetch('power_consumption.csv')
                 .then(response => response.text())
                 .then(csvText => {
                     const rows = csvText.trim().split('\n');
-                    const header = rows.shift().split(';'); // Remove header row
+                    const header = rows.shift().split(';');
                     
-                    // Initialize hourly consumption array
+                    let lastDate = null;
                     const hourlyConsumption = new Array(24).fill(0);
-                    let targetDate = null;
 
+                    // First pass: Find the latest date
                     rows.forEach(row => {
                         const cells = row.split(';');
                         if (cells.length < 9) return;
 
-                        const date = cells[0];
-                        const time = cells[1];
-                        const power = parseFloat(cells[2]);
-
-                        // Set target date from first row
-                        if (!targetDate) targetDate = date;
-                        if (date !== targetDate) return;
-
-                        const hour = parseInt(time.split(':')[0], 10);
-                        if (!isNaN(hour) && !isNaN(power)) {
-                            // Convert kW to kWh (assuming 1-minute interval measurements)
-                            hourlyConsumption[hour] += power * (1/60);
+                        const [day, month, year] = cells[0].split('/').map(Number);
+                        const currentDate = new Date(year, month - 1, day);
+                        
+                        if (!lastDate || currentDate > lastDate) {
+                            lastDate = currentDate;
+                            fetchedDate = cells[0]; // Store original date string
                         }
                     });
 
-                    // Update chart with real data
+                    // Second pass: Aggregate data for the latest date
+                    rows.forEach(row => {
+                        const cells = row.split(';');
+                        if (cells.length < 9 || cells[0] !== fetchedDate) return;
+
+                        const time = cells[1];
+                        const power = parseFloat(cells[2]);
+                        const hour = parseInt(time.split(':')[0], 10);
+
+                        if (!isNaN(hour) && !isNaN(power)) {
+                            hourlyConsumption[hour] += power * (1/60); // Convert kW to kWh
+                        }
+                    });
+
+                    // Update chart
                     consumptionChart.data.datasets[0].data = hourlyConsumption;
                     consumptionChart.update();
                 })
-                .catch(error => console.error('Error loading CSV:', error));
+                .catch(error => console.error('Error:', error));
+            
+            documemt.getElementById('dashboardGraphTitle').innerText += ` on ${fetchedDate}`;
         });
 
 
