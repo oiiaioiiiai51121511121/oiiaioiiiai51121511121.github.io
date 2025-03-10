@@ -83,16 +83,17 @@
 
         /* Scan Notification Styles */
         .scan-notification {
-            max-height: 0;
             overflow: hidden;
-            transition: max-height 0.5s ease;
+            transition: height 0.5s ease;
             background: white;
             text-align: center;
             box-shadow: 0 2px 10px rgba(0,0,0,0.1);
         }
         .scan-notification.show {
-            max-height: 100px;
-            transition: max-height 0.5s ease;
+            height: 100px;
+        }
+        .scan-notification.hide {
+            height: 0;
         }
         .notification-content {
             padding: 1rem;
@@ -147,7 +148,7 @@
 
     <!-- Pages -->
     <div id="page1" class="page-content active-page">
-        <div class="scan-notification mb-3" id="scanNotification">
+        <div class="scan-notification hide mb-3" id="scanNotification">
             <div class="notification-content">
                 <div id="notificationText">Uploading...</div>
                 <div class="progress-spinner"></div>
@@ -415,6 +416,7 @@
             progressSpinner.style.display = 'block';
             
             // Show notification
+            notification.classList.remove('hide');
             notification.classList.add('show');
             
             setTimeout(() => {
@@ -426,6 +428,7 @@
             setTimeout(() => {
                 // Hide notification after total 7 seconds
                 notification.classList.remove('show');
+                notification.classList.add('hide');
                 
                 // Reset notification content after animation
                 setTimeout(() => {
