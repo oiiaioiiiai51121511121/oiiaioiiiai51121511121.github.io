@@ -178,7 +178,7 @@
 
             <div class="row mt-1">
                 <div class="col-12">
-                    <div class="card expandable-card mt-3" onclick="toggleFullscreen(this);this.classList.remove('mt-3')">
+                    <div class="card expandable-card mt-3" id="log-card" onclick="toggleFullscreen(this);this.classList.remove('mt-3')">
                         <div class="card-body">
                             <h5><i class="bi bi-info-circle"></i>Log</h5>
                             <div id="electricity-info">
@@ -398,7 +398,7 @@
                 card.innerHTML = `
                     <div class="card-header d-flex justify-content-between">
                         <h5><i class="bi bi-info-circle"></i>Log</h5>
-                        <button class="btn btn-sm btn-danger" onclick="toggleFullscreen(this.closest('.card'));this.classList.add('mt-3')">
+                        <button class="btn btn-sm btn-danger" onclick="toggleFullscreen(document.getElementById('log-card').classList.add('mt-3')">
                             <i class="bi bi-x-lg"></i>
                         </button>
                     </div>
