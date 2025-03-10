@@ -132,16 +132,21 @@
     </style>
 </head>
 <body>
-    <nav class="navbar navbar-dark bg-primary header-top">
-        <div class="container-fluid">
-            <span class="navbar-brand mb-0 h1 gap-3">  <!-- Added gap-3 for spacing -->
-                <img src="logo-1024.svg" height="40" class="d-inline-block align-top" alt="Logo">  <!-- Increased height -->
-                <span class="fs-3">SmartWatt</span>  <!-- Added font-size utility -->
+    <nav class="navbar navbar-dark bg-primary header-top py-2">
+        <div class="container-fluid d-flex align-items-center">
+            <!-- Logo Section -->
+            <span class="navbar-brand mb-0 h1 gap-2 d-flex align-items-center">
+                <img src="logo-1024.svg" height="28" class="d-inline-block align-middle" alt="Logo">
+                <span class="fs-4">SmartWatt</span>
             </span>
-            <button id="install-button" class="btn btn-light btn-lg">  <!-- Added btn-lg -->
-                <i class="bi bi-download fs-3"></i>  <!-- Added fs-3 to icon -->
-                <span class="d-none d-sm-inline fs-5">Install</span>  <!-- Added fs-5 to text -->
-            </button>
+    
+            <!-- Install Button -->
+            <div class="d-flex align-items-center">
+                <button id="install-button" class="btn btn-light py-1 px-3">
+                    <i class="bi bi-download fs-5"></i>
+                    <span class="d-none d-sm-inline ms-2 fs-5">Install</span>
+                </button>
+            </div>
         </div>
     </nav>
 
