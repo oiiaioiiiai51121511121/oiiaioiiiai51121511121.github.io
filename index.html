@@ -346,6 +346,7 @@
         let electricityInfoContent;
         let paymentPrePay = -29.50;
         let paymentNowPay = 29.50;
+        let tempNum = 0;
 
         // PWA Install Button Logic
         window.addEventListener('beforeinstallprompt', (e) => {
@@ -483,10 +484,12 @@
                 }
                 paymentArea.querySelector('input').addEventListener('input', () => {
                     input = paymentArea.querySelector('input').value;
+                    input = Math.floor(Number(input) * 100) / 100;
+                    tempNum = paymentPrePay + input;
                     document.getElementById('total-section').innerHTML = `
                         <div>
                             <div class="text-muted small">Current Balance: $${paymentPrePay.toFixed(2)}</div>
-                            <div class="text-muted small">New Balance: $${(paymentPrePay + input).toFixed(2)}</div>
+                            <div class="text-muted small">New Balance: $${tempNum.toFixed(2)}</div>
                         </div>
                         <h3 class="mb-0">Total:   HKD $${input.toFixed(2)}</h3>
                     `;
