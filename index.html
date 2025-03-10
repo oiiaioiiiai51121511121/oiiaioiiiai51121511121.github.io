@@ -302,6 +302,7 @@
         let codeReader;
         let deferredPrompt;
         let isFullscreen = false;
+        let electricityInfoContent;
 
         // PWA Install Button Logic
         window.addEventListener('beforeinstallprompt', (e) => {
@@ -390,10 +391,11 @@
         });
 
         function toggleFullscreen(card) {
-            content = document.getElementById('electricity-info').innerHTML;
+            alert(content);
             isFullscreen = !isFullscreen;
             card.classList.toggle('fullscreen-card', isFullscreen);
             if(isFullscreen) {
+                electricityInfoContent = document.getElementById('electricity-info').innerHTML;
                 card.innerHTML = `
                     <div class="card-header d-flex justify-content-between">
                         <h5><i class="bi bi-info-circle"></i>Log</h5>
@@ -402,7 +404,7 @@
                         </button>
                     </div>
                     <div class="card-body">
-                        ${content}
+                        ${electricityInfoContent}
                     </div>
                 `;
             } else {
@@ -410,7 +412,7 @@
                     <div class="card-body">
                         <h5><i class="bi bi-info-circle"></i>Log</h5>
                         <div id="electricity-info">
-                            ${content}
+                            ${electricityInfoContent}
                         </div>
                     </div>
                 `;
