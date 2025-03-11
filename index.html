@@ -504,6 +504,11 @@
                 .catch(error => console.error('Error:', error));
         });
 
+        window.onload = (event) => {
+            console.log("page is fully loaded");
+            document.getElementById('dashboardGraphTitle').innerText += `: ${timeRangeString}`;
+        };
+
         function showPage(pageNumber, linkElement) {
             document.querySelectorAll('.nav-link').forEach(link => link.classList.remove('active'));
             linkElement.classList.add('active');
