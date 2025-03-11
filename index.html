@@ -348,9 +348,10 @@
     <!-- Bootstrap Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@undecided/barcode-scanner@2.1.3/dist/barcode-scanner.umd.min.js"></script>
+    <script src="https://unpkg.com/@zxing/library@0.18.6/umd/index.min.js"></script>
     <script>
         let currentPage = 1;
+        let codeReader;
         let deferredPrompt;
         let isFullscreen = false;
         let electricityInfoContent;
@@ -360,10 +361,6 @@
         let consumptionChart;
         let peakHoursString = '';
         let timeRangeString = '';
-        const supportedFormats = ['qr_code'];
-        let scannerStream = null;
-        let scanActive = false;
-        let lastScanTime = 0;
 
         // PWA Install Button Logic
         window.addEventListener('beforeinstallprompt', (e) => {
@@ -522,115 +519,6 @@
 
         });
 
-        async function startScanner() {
-            try {
-                // Check camera permissions first
-                const permissionStatus = await navigator.permissions.query({ name: 'camera' });
-                if (permissionStatus.state === 'denied') {
-                    showCameraError('Camera access denied. Please enable camera permissions in your browser settings.');
-                    return;
-                }
-
-                const videoElement = document.getElementById('preview');
-                videoElement.style.display = 'block';
-                
-                // Check for BarcodeDetector support
-                if (!('BarcodeDetector' in window)) {
-                    showCameraError('Barcode detection not supported in this browser');
-                    return;
-                }
-
-                // Get camera stream with fallback constraints
-                scannerStream = await navigator.mediaDevices.getUserMedia({
-                    video: {
-                        facingMode: 'environment',
-                        width: { min: 640, ideal: 1280 },
-                        height: { min: 480, ideal: 720 },
-                        frameRate: { min: 15, ideal: 30 }
-                    }
-                }).catch(err => {
-                    if (err.name === 'NotFoundError') {
-                        throw new Error('No camera found');
-                    }
-                    throw err;
-                });
-
-                videoElement.srcObject = scannerStream;
-                await videoElement.play();
-
-                // Create barcode detector with QR code support
-                const barcodeDetector = new BarcodeDetector({ formats: ['qr_code'] });
-                scanActive = true;
-
-                // Detection loop with cooldown period
-                const detectFrame = async () => {
-                    if (!scanActive) return;
-                    
-                    try {
-                        const barcodes = await barcodeDetector.detect(videoElement);
-                        if (barcodes.length > 0 && Date.now() - lastScanTime > 1000) {
-                            lastScanTime = Date.now();
-                            handleScanResult(barcodes[0].rawValue);
-                            return;
-                        }
-                    } catch (error) {
-                        console.error('Detection error:', error);
-                    }
-                    
-                    requestAnimationFrame(detectFrame);
-                };
-
-                requestAnimationFrame(detectFrame);
-            } catch (error) {
-                console.error('Scanner error:', error);
-                showCameraError(getUserFriendlyError(error));
-                stopScanner();
-            }
-        }
-
-        function getUserFriendlyError(error) {
-            switch (error.name) {
-                case 'NotAllowedError':
-                    return 'Camera access denied. Please allow camera permissions and try again.';
-                case 'NotFoundError':
-                case 'OverconstrainedError':
-                    return 'No suitable camera found. Please check your camera connection.';
-                default:
-                    return 'Camera access error: ' + error.message;
-            }
-        }
-
-        function showCameraError(message) {
-            const scanPage = document.getElementById('page2');
-            scanPage.innerHTML = `
-                <div class="container text-center py-5">
-                    <i class="bi bi-camera-off fs-1 text-danger"></i>
-                    <h3 class="mt-3">Camera Error</h3>
-                    <p>${message}</p>
-                    <button class="btn btn-primary mt-3" onclick="startScanner()">
-                        <i class="bi bi-arrow-clockwise"></i> Retry
-                    </button>
-                    <div class="mt-2 small text-muted">
-                        Ensure you're using HTTPS and have granted camera permissions
-                    </div>
-                </div>
-            `;
-        }
-
-        function stopScanner() {
-            scanActive = false;
-            if (scannerStream) {
-                scannerStream.getTracks().forEach(track => {
-                    track.stop();
-                    scannerStream.removeTrack(track);
-                });
-                scannerStream = null;
-            }
-            const videoElement = document.getElementById('preview');
-            videoElement.style.display = 'none';
-        }
-
-        // Modify showPage function
         function showPage(pageNumber, linkElement) {
             document.querySelectorAll('.nav-link').forEach(link => link.classList.remove('active'));
             linkElement.classList.add('active');
@@ -639,13 +527,56 @@
             document.getElementById(`page${pageNumber}`).classList.add('active-page');
             
             if (pageNumber === 2) {
-                // Delay scanner start for iOS compatibility
-                setTimeout(startScanner, 100);
-            } else {
-                stopScanner();
+                startScanner();
+            } else if (codeReader) {
+                codeReader.reset();
+                document.getElementById('preview').style.display = 'block';
+                document.getElementById('scan-result').style.display = 'none';
             }
         }
-        
+
+        function startScanner() {
+            if (codeReader) {
+                codeReader.reset();
+            }
+            codeReader = new ZXing.BrowserMultiFormatReader();
+            const videoElement = document.getElementById('preview');
+            
+            // Updated constraints for higher resolution
+            const constraints = {
+                video: {
+                    facingMode: 'environment',
+                    width: { min: 1280, ideal: 1920, max: 2560 },
+                    height: { min: 720, ideal: 1080, max: 1440 },
+                    aspectRatio: 1.777, // 16:9 aspect ratio
+                    frameRate: { ideal: 30, max: 60 },
+                    advanced: [
+                        { width: 1920, height: 1080, frameRate: 60 },
+                        { width: 1280, height: 720, frameRate: 30 },
+                        { focusMode: 'continuous' }
+                    ]
+                }
+            };
+
+            const hints = {
+                [ZXing.DecodeHintType.TRY_HARDER]: true,
+                [ZXing.DecodeHintType.POSSIBLE_FORMATS]: [ZXing.BarcodeFormat.QR_CODE],
+            };
+
+            codeReader.decodeFromConstraints(constraints, videoElement, (result, err) => {
+                if (result) {
+                    codeReader.reset();
+                    showPage(1, document.querySelector('.nav-link'));
+                    showScanNotification(result.text);
+                }
+                if (err && !(err instanceof ZXing.NotFoundException)) {
+                    console.error(err);
+                }
+            }, hints).catch(err => {
+                console.error('Error starting scanner:', err);
+            });
+        }
+
         function showScanNotification(scannedText) {
             const notification = document.getElementById('scanNotification');
             const dashboardNotificationText = document.getElementById('dashboardNotificationText');

@@ -11,7 +11,7 @@ const ASSETS = [
     'https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js',
     'https://fonts.googleapis.com/css2?family=Dosis:wght@400;500;600&display=swap',
     'https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css',
-    'https://cdn.jsdelivr.net/npm/@undecided/barcode-reader@latest/dist/barcode-reader.min.js',
+    'https://unpkg.com/@zxing/library@0.18.6/umd/index.min.js',
     'https://cdn.jsdelivr.net/npm/chart.js',
     // Payment logos
     'https://miro.medium.com/v2/resize:fit:720/format:webp/1*eKZ-IVjg4CXq3Ax4iCtQPw.png',
