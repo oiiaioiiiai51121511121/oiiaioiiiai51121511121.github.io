@@ -470,13 +470,17 @@
                         .filter(v => v !== null);
 
                     // Format time range
-                    const formatTime = date => {
+                    const formatTime = (date, includeDate) => {
                         const pad = n => String(n).padStart(2, '0');
-                        return `${pad(date.getDate())}/${pad(date.getMonth()+1)}/${date.getFullYear()} ` +
-                            `${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
+                        const datePart = includeDate
+                            ? `${pad(date.getDate())}/${pad(date.getMonth()+1)}/${date.getFullYear()} `
+                            : ``;
+                        const timePart = `${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
+                        return `${datePart}${timePart}`;
                     };
 
-                    const timeRange = `${formatTime(minTime)} - ${formatTime(maxTime)}`;
+                    // Usage example (with the boolean parameter):
+                    const timeRange = `${formatTime(minTime, true)} - ${formatTime(maxTime, false)}`;
 
                     // Create color array
                     const backgroundColors = hourlyConsumption.map((v, hour) => 
@@ -506,7 +510,7 @@
             const checkElementExistence = setInterval(() => {
                 if (document.getElementById('dashboardGraphTitle')) {
                     console.log('Element exists!');
-                    document.getElementById('dashboardGraphTitle').innerText += `: ${timeRangeString}`;
+                    document.getElementById('dashboardGraphTitle').innerText += `:\n${timeRangeString}`;
                     clearInterval(checkElementExistence);
                 } else {
                     console.log('Element does not exist yet...');
