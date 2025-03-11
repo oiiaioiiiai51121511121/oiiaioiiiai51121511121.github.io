@@ -360,9 +360,10 @@
         let consumptionChart;
         let peakHoursString = '';
         let timeRangeString = '';
+        const supportedFormats = ['qr_code'];
         let scannerStream = null;
         let scanActive = false;
-        const supportedFormats = ['qr_code'];
+        let lastScanTime = 0;
 
         // PWA Install Button Logic
         window.addEventListener('beforeinstallprompt', (e) => {
@@ -523,77 +524,113 @@
 
         async function startScanner() {
             try {
-                const videoElement = document.getElementById('preview');
-                videoElement.style.display = 'block';
-                
-                // Get supported formats
-                const formats = await BarcodeScanner.getSupportedFormats();
-                if (!formats.some(f => supportedFormats.includes(f))) {
-                    alert('QR code scanning not supported in this browser');
+                // Check camera permissions first
+                const permissionStatus = await navigator.permissions.query({ name: 'camera' });
+                if (permissionStatus.state === 'denied') {
+                    showCameraError('Camera access denied. Please enable camera permissions in your browser settings.');
                     return;
                 }
 
-                // Get camera stream
+                const videoElement = document.getElementById('preview');
+                videoElement.style.display = 'block';
+                
+                // Check for BarcodeDetector support
+                if (!('BarcodeDetector' in window)) {
+                    showCameraError('Barcode detection not supported in this browser');
+                    return;
+                }
+
+                // Get camera stream with fallback constraints
                 scannerStream = await navigator.mediaDevices.getUserMedia({
                     video: {
                         facingMode: 'environment',
-                        width: { min: 1280, ideal: 1920 },
-                        height: { min: 720, ideal: 1080 },
-                        frameRate: { ideal: 60 }
+                        width: { min: 640, ideal: 1280 },
+                        height: { min: 480, ideal: 720 },
+                        frameRate: { min: 15, ideal: 30 }
                     }
+                }).catch(err => {
+                    if (err.name === 'NotFoundError') {
+                        throw new Error('No camera found');
+                    }
+                    throw err;
                 });
 
                 videoElement.srcObject = scannerStream;
                 await videoElement.play();
 
-                // Create barcode detector
-                const barcodeDetector = new BarcodeDetector({ formats: supportedFormats });
+                // Create barcode detector with QR code support
+                const barcodeDetector = new BarcodeDetector({ formats: ['qr_code'] });
                 scanActive = true;
 
-                // Start detection loop
+                // Detection loop with cooldown period
                 const detectFrame = async () => {
                     if (!scanActive) return;
-
+                    
                     try {
                         const barcodes = await barcodeDetector.detect(videoElement);
-                        if (barcodes.length > 0) {
-                            const result = barcodes[0].rawValue;
-                            handleScanResult(result);
+                        if (barcodes.length > 0 && Date.now() - lastScanTime > 1000) {
+                            lastScanTime = Date.now();
+                            handleScanResult(barcodes[0].rawValue);
                             return;
                         }
                     } catch (error) {
-                        console.error('Barcode detection error:', error);
+                        console.error('Detection error:', error);
                     }
-
-                    // Continue scanning
+                    
                     requestAnimationFrame(detectFrame);
                 };
 
-                // Start detection
                 requestAnimationFrame(detectFrame);
             } catch (error) {
-                console.error('Scanner initialization failed:', error);
-                alert('Error accessing camera');
+                console.error('Scanner error:', error);
+                showCameraError(getUserFriendlyError(error));
+                stopScanner();
             }
         }
 
-        function handleScanResult(result) {
-            stopScanner();
-            showPage(1, document.querySelector('.nav-link'));
-            showScanNotification(result);
+        function getUserFriendlyError(error) {
+            switch (error.name) {
+                case 'NotAllowedError':
+                    return 'Camera access denied. Please allow camera permissions and try again.';
+                case 'NotFoundError':
+                case 'OverconstrainedError':
+                    return 'No suitable camera found. Please check your camera connection.';
+                default:
+                    return 'Camera access error: ' + error.message;
+            }
+        }
+
+        function showCameraError(message) {
+            const scanPage = document.getElementById('page2');
+            scanPage.innerHTML = `
+                <div class="container text-center py-5">
+                    <i class="bi bi-camera-off fs-1 text-danger"></i>
+                    <h3 class="mt-3">Camera Error</h3>
+                    <p>${message}</p>
+                    <button class="btn btn-primary mt-3" onclick="startScanner()">
+                        <i class="bi bi-arrow-clockwise"></i> Retry
+                    </button>
+                    <div class="mt-2 small text-muted">
+                        Ensure you're using HTTPS and have granted camera permissions
+                    </div>
+                </div>
+            `;
         }
 
         function stopScanner() {
             scanActive = false;
             if (scannerStream) {
-                scannerStream.getTracks().forEach(track => track.stop());
+                scannerStream.getTracks().forEach(track => {
+                    track.stop();
+                    scannerStream.removeTrack(track);
+                });
                 scannerStream = null;
             }
             const videoElement = document.getElementById('preview');
             videoElement.style.display = 'none';
         }
 
-        // Modify the showPage function
+        // Modify showPage function
         function showPage(pageNumber, linkElement) {
             document.querySelectorAll('.nav-link').forEach(link => link.classList.remove('active'));
             linkElement.classList.add('active');
@@ -602,12 +639,13 @@
             document.getElementById(`page${pageNumber}`).classList.add('active-page');
             
             if (pageNumber === 2) {
-                startScanner();
+                // Delay scanner start for iOS compatibility
+                setTimeout(startScanner, 100);
             } else {
                 stopScanner();
             }
         }
-
+        
         function showScanNotification(scannedText) {
             const notification = document.getElementById('scanNotification');
             const dashboardNotificationText = document.getElementById('dashboardNotificationText');
