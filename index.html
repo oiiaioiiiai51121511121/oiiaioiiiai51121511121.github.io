@@ -541,23 +541,38 @@
             }
             codeReader = new ZXing.BrowserMultiFormatReader();
             const videoElement = document.getElementById('preview');
+            
+            // Enhanced video constraints for higher resolution
             const constraints = {
                 video: {
-                    facingMode: 'environment'
+                    facingMode: 'environment',
+                    width: { ideal: 1280, min: 1024 },
+                    height: { ideal: 720, min: 576 },
+                    aspectRatio: { ideal: 1.7777778 } // 16:9
                 }
             };
-            codeReader.decodeFromConstraints(constraints, videoElement, (result, err) => {
-                if (result) {
+
+            // Configure decoding hints for better QR recognition
+            const hints = new Map();
+            hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS, [ZXing.BarcodeFormat.QR_CODE]);
+            hints.set(ZXing.DecodeHintType.TRY_HARDER, true);
+            hints.set(ZXing.DecodeHintType.PURE_BARCODE, true); // Assumes clean barcode without background
+            codeReader.setHints(hints);
+
+            // Start decoding with enhanced configuration
+            codeReader.decodeFromConstraints(constraints, videoElement, hints)
+                .then(result => {
                     codeReader.reset();
                     showPage(1, document.querySelector('.nav-link'));
                     showScanNotification(result.text);
-                }
-                if (err && !(err instanceof ZXing.NotFoundException)) {
-                    console.error(err);
-                }
-            }).catch(err => {
-                console.error('Error starting scanner:', err);
-            });
+                })
+                .catch(err => {
+                    if (err instanceof ZXing.NotFoundException) {
+                        // Normal not found behavior
+                    } else if (err.name !== 'NotAllowedError') {
+                        console.error('Decoding error:', err);
+                    }
+                });
         }
 
         function showScanNotification(scannedText) {
