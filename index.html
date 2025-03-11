@@ -161,6 +161,31 @@
             transform-origin: center center;
             transition: transform 0.3s ease;
         }
+        /* Add new scanner styles */
+        #scanner-container {
+            position: relative;
+            width: 100%;
+            height: calc(100vh - 130px);
+            overflow: hidden;
+        }
+        #interactive-viewport {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+        .zoom-controls {
+            position: fixed;
+            bottom: 80px;
+            left: 20px;
+            right: 20px;
+            z-index: 2000;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 10px 20px;
+            border-radius: 25px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
         #camera-error {
             display: none;
             position: fixed;
@@ -276,11 +301,12 @@
         </div>
     </div>
 
+    <!-- Modified Page 2 -->
     <div id="page2" class="page-content">
-        <div class="position-relative">
-            <video id="preview" class="w-100" style="height: calc(100vh - 130px); object-fit: contain;"></video>
+        <div id="scanner-container">
+            <video id="interactive-viewport" playsinline></video>
             <div class="scan-overlay"></div>
-            <div id="camera-status" class="text-center text-white mt-2">Starting camera...</div>
+            <div id="camera-status" class="text-center text-white mt-2">Initializing scanner...</div>
         </div>
         <div class="zoom-controls">
             <div class="zoom-label">
@@ -396,12 +422,13 @@
         </ul>
     </nav>  
 
-    <!-- Bootstrap Icons -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    <!-- Updated Dependencies -->
+    <script src="https://cdn.jsdelivr.net/npm/@undecided/barcode-reader@latest/dist/barcode-reader.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="https://unpkg.com/@zxing/library@0.18.6/umd/index.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+
     <script>
-        // Improved scanner initialization
+        // Scanner Configuration
         let currentPage = 1;
         let deferredPrompt;
         let isFullscreen = false;
@@ -414,10 +441,122 @@
         let timeRangeString = '';
         let codeReader = null;
         let videoStream = null;
+        let scanner = null;
         let currentZoom = 1;
         let isScanning = false;
 
-        // PWA Install Button Logic
+        const scannerConfig = {
+            inputStream: {
+                name: "Live",
+                type: "LiveStream",
+                target: document.querySelector('#interactive-viewport'),
+                constraints: {
+                    width: { min: 1280, ideal: 1920 },
+                    height: { min: 720, ideal: 1080 },
+                    facingMode: "environment",
+                    frameRate: { ideal: 30, max: 30 }
+                },
+            },
+            decoder: {
+                readers: ["qrcode_reader"],
+                debug: {
+                    showCanvas: false,
+                    showPatches: false,
+                    showFoundPatches: false,
+                    showSkeleton: false,
+                    showLabels: false,
+                    showPatchLabels: false,
+                    showRemainingPatchLabels: false,
+                    boxFromPatches: {
+                        showTransformed: false,
+                        showTransformedBox: false,
+                        showBB: false
+                    }
+                }
+            },
+            locator: {
+                halfSample: true,
+                patchSize: "medium",  // Optimized for version 8 QR
+            },
+            numOfWorkers: navigator.hardwareConcurrency || 4,
+            frequency: 10,
+        };
+
+        // Scanner Initialization
+        async function initScanner() {
+            try {
+                scanner = new BarcodeReader.Scanner(scannerConfig);
+                
+                scanner.addListener('scan', result => {
+                    handleScanResult(result.code);
+                });
+                
+                scanner.addListener('processFrame', () => {
+                    requestAnimationFrame(processFrame);
+                });
+
+                await scanner.start();
+                isScanning = true;
+                document.getElementById('camera-status').textContent = 'Scanning...';
+                
+                // Initialize zoom controls
+                const zoomSlider = document.getElementById('zoomSlider');
+                zoomSlider.addEventListener('input', (e) => {
+                    currentZoom = parseFloat(e.target.value);
+                    document.getElementById('interactive-viewport').style.transform = `scale(${currentZoom})`;
+                });
+
+            } catch (error) {
+                console.error('Scanner error:', error);
+                showCameraError();
+            }
+        }
+
+        function processFrame() {
+            if (isScanning) {
+                scanner.processFrame();
+            }
+        }
+
+        function handleScanResult(text) {
+            if (!isScanning) return;
+            stopScanner();
+            showPage(1, document.querySelector('.nav-link'));
+            showScanNotification(text);
+            setTimeout(() => initScanner(), 3000);
+        }
+
+        function stopScanner() {
+            if (scanner) {
+                scanner.removeAllListeners();
+                scanner.stop();
+                scanner = null;
+            }
+            isScanning = false;
+            document.getElementById('interactive-viewport').style.transform = 'scale(1)';
+            document.getElementById('zoomSlider').value = 1;
+        }
+
+        function showCameraError() {
+            document.getElementById('camera-error').style.display = 'block';
+            document.getElementById('camera-status').style.display = 'none';
+        }
+
+        // Modified Page Navigation
+        function showPage(pageNumber, linkElement) {
+            document.querySelectorAll('.nav-link').forEach(link => link.classList.remove('active'));
+            linkElement.classList.add('active');
+            
+            document.querySelector('.active-page').classList.remove('active-page');
+            document.getElementById(`page${pageNumber}`).classList.add('active-page');
+            
+            if (pageNumber === 2) {
+                initScanner();
+            } else {
+                stopScanner();
+            }
+        }
+
         window.addEventListener('beforeinstallprompt', (e) => {
             e.preventDefault();
             deferredPrompt = e;
@@ -573,120 +712,6 @@
             }, 100); // Check every 100 milliseconds
 
         });
-
-        async function startScanner() {
-            if (isScanning) return;
-            isScanning = true;
-            
-            try {
-                const videoElement = document.getElementById('preview');
-                const statusElement = document.getElementById('camera-status');
-                
-                // Reset previous instances
-                if (codeReader) {
-                    codeReader.reset();
-                    codeReader = null;
-                }
-
-                // Initialize new reader
-                codeReader = new ZXing.BrowserMultiFormatReader();
-                
-                // Get camera access
-                videoStream = await navigator.mediaDevices.getUserMedia({
-                    video: {
-                        facingMode: 'environment',
-                        width: { ideal: 1280 },
-                        height: { ideal: 720 },
-                    }
-                });
-
-                videoElement.srcObject = videoStream;
-                statusElement.textContent = 'Scanning...';
-
-                // Set up zoom controls
-                const zoomSlider = document.getElementById('zoomSlider');
-                zoomSlider.addEventListener('input', (e) => {
-                    currentZoom = parseFloat(e.target.value);
-                    videoElement.style.transform = `scale(${currentZoom})`;
-                });
-
-                // Start decoding
-                codeReader.decodeFromVideoDevice(null, videoElement, (result, err) => {
-                    if (result) {
-                        handleScanResult(result.text);
-                    }
-                    if (err) {
-                        if (!(err instanceof ZXing.NotFoundException)) {
-                            console.error('Scan error:', err);
-                        }
-                        // Continue scanning
-                        requestAnimationFrame(() => codeReader.decodeOnce(videoElement));
-                    }
-                });
-
-            } catch (error) {
-                console.error('Camera error:', error);
-                showCameraError();
-                isScanning = false;
-            }
-        }
-
-        function handleScanResult(text) {
-            if (!isScanning) return;
-            
-            // Stop scanning temporarily
-            codeReader.reset();
-            isScanning = false;
-            
-            showPage(1, document.querySelector('.nav-link'));
-            showScanNotification(text);
-            
-            // Reset after handling
-            setTimeout(() => {
-                codeReader.decodeContinuously(videoElement, (result, err) => {
-                    // New scanning logic
-                });
-                isScanning = true;
-            }, 3000);
-        }
-
-        function showCameraError() {
-            document.getElementById('camera-error').style.display = 'block';
-            document.getElementById('camera-status').style.display = 'none';
-            if (videoStream) {
-                videoStream.getTracks().forEach(track => track.stop());
-            }
-        }
-
-        function stopScanner() {
-            if (codeReader) {
-                codeReader.reset();
-                codeReader = null;
-            }
-            if (videoStream) {
-                videoStream.getTracks().forEach(track => track.stop());
-                videoStream = null;
-            }
-            isScanning = false;
-            document.getElementById('preview').style.transform = 'scale(1)';
-            document.getElementById('zoomSlider').value = 1;
-            document.getElementById('camera-status').textContent = 'Starting camera...';
-        }
-
-        // Modified showPage function
-        function showPage(pageNumber, linkElement) {
-            document.querySelectorAll('.nav-link').forEach(link => link.classList.remove('active'));
-            linkElement.classList.add('active');
-            
-            document.querySelector('.active-page').classList.remove('active-page');
-            document.getElementById(`page${pageNumber}`).classList.add('active-page');
-            
-            if (pageNumber === 2) {
-                startScanner();
-            } else {
-                stopScanner();
-            }
-        }
 
         function showScanNotification(scannedText) {
             const notification = document.getElementById('scanNotification');
