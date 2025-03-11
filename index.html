@@ -503,10 +503,16 @@
                 })
                 .catch(error => console.error('Error:', error));
 
-            window.onload = (event) => {
-                console.log("page is fully loaded");
-                document.getElementById('dashboardGraphTitle').innerText += `: ${timeRangeString}`;
-            };
+            const checkElementExistence = setInterval(() => {
+                if (document.getElementById('dashboardGraphTitle')) {
+                    console.log('Element exists!');
+                    document.getElementById('dashboardGraphTitle').innerText += `: ${timeRangeString}`;
+                    clearInterval(checkElementExistence);
+                } else {
+                    console.log('Element does not exist yet...');
+                }
+            }, 100); // Check every 100 milliseconds
+
         });
 
         function showPage(pageNumber, linkElement) {
