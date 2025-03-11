@@ -541,28 +541,18 @@
             }
             codeReader = new ZXing.BrowserMultiFormatReader();
             const videoElement = document.getElementById('preview');
-            
-            // Updated constraints for higher resolution
             const constraints = {
                 video: {
                     facingMode: 'environment',
                     width: { min: 1280, ideal: 1920, max: 2560 },
                     height: { min: 720, ideal: 1080, max: 1440 },
-                    aspectRatio: 1.777, // 16:9 aspect ratio
-                    frameRate: { ideal: 30, max: 60 },
-                    advanced: [
-                        { width: 1920, height: 1080, frameRate: 60 },
-                        { width: 1280, height: 720, frameRate: 30 },
-                        { focusMode: 'continuous' }
-                    ]
+                    aspectRatio: { ideal: 1.777 } // 16:9 aspect ratio
                 }
             };
-
             const hints = {
                 [ZXing.DecodeHintType.TRY_HARDER]: true,
                 [ZXing.DecodeHintType.POSSIBLE_FORMATS]: [ZXing.BarcodeFormat.QR_CODE],
             };
-
             codeReader.decodeFromConstraints(constraints, videoElement, (result, err) => {
                 if (result) {
                     codeReader.reset();
