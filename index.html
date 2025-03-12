@@ -360,7 +360,7 @@
         let consumptionChart;
         let peakHoursString = '';
         let timeRangeString = '';
-        let html5QrcodeScanner;
+        let html5QrcodeScanner = null;
 
         // PWA Install Button Logic
         window.addEventListener('beforeinstallprompt', (e) => {
@@ -519,6 +519,66 @@
 
         });
 
+        function startScanner() {
+            const videoElement = document.getElementById('preview');
+            videoElement.style.display = 'block';
+
+            // Proper configuration separation
+            const scannerConfig = { 
+                fps: 10,
+                qrbox: { width: 250, height: 250 },
+                aspectRatio: 1.777,
+            };
+
+            const cameraConstraints = {
+                facingMode: "environment",
+                video: {
+                    width: { min: 1280, ideal: 1920, max: 2560 },
+                    height: { min: 720, ideal: 1080, max: 1440 },
+                    focusMode: "continuous",
+                }
+            };
+
+            // Clean up any existing scanner instance
+            if (html5QrcodeScanner && html5QrcodeScanner.isScanning) {
+                html5QrcodeScanner.stop();
+            }
+
+            // Create new scanner instance
+            html5QrcodeScanner = new Html5Qrcode("preview");
+            
+            html5QrcodeScanner.start(
+                cameraConstraints,  // Camera constraints as first argument
+                scannerConfig,      // Scanner config as second argument
+                qrCodeSuccessCallback,
+                qrCodeErrorCallback
+            ).catch(err => {
+                console.error('Error starting scanner:', err);
+                // Fallback to basic constraints
+                html5QrcodeScanner.start(
+                    { facingMode: "user" },
+                    scannerConfig,
+                    qrCodeSuccessCallback,
+                    qrCodeErrorCallback
+                ).catch(fallbackErr => {
+                    console.error('Fallback failed:', fallbackErr);
+                });
+            });
+        }
+
+        function stopScanner() {
+            if (html5QrcodeScanner && html5QrcodeScanner.isScanning) {
+                html5QrcodeScanner.stop()
+                    .then(() => {
+                        console.log('Scanner stopped');
+                        document.getElementById('preview').style.display = 'none';
+                    })
+                    .catch(err => {
+                        console.error('Error stopping scanner:', err);
+                    });
+            }
+        }
+
         function showPage(pageNumber, linkElement) {
             document.querySelectorAll('.nav-link').forEach(link => link.classList.remove('active'));
             linkElement.classList.add('active');
@@ -527,62 +587,10 @@
             document.getElementById(`page${pageNumber}`).classList.add('active-page');
             
             if (pageNumber === 2) {
-                startScanner();
-            } else if (html5QrcodeScanner) {
+                // Delay starting scanner to allow page transition
+                setTimeout(startScanner, 300);
+            } else {
                 stopScanner();
-            }
-        }
-
-        function startScanner() {
-            const videoElement = document.getElementById('preview');
-            videoElement.style.display = 'block';
-            
-            // Enhanced configuration with focus constraints
-            const config = { 
-                fps: 10,
-                qrbox: { width: 250, height: 250 },
-                aspectRatio: 1.777,
-                facingMode: "environment",
-                // Advanced video constraints
-                videoConstraints: {
-                    width: { min: 1280, ideal: 1920, max: 2560 },
-                    height: { min: 720, ideal: 1080, max: 1440 },
-                    focusMode: "continuous", // Request continuous focus
-                    advanced: [
-                        { focusMode: "continuous" }, // Redundant but helps some browsers
-                        { iso: "auto" }, // Enable automatic ISO
-                        { whiteBalance: "continuous" } // Continuous white balance
-                    ]
-                }
-            };
-
-            html5QrcodeScanner = new Html5Qrcode("preview");
-            
-            html5QrcodeScanner.start(
-                config,
-                qrCodeSuccessCallback,
-                qrCodeErrorCallback)
-            .catch(err => {
-                console.error('Error starting scanner:', err);
-                // Fallback to basic constraints if advanced fail
-                html5QrcodeScanner.start(
-                    { facingMode: "environment" },
-                    qrCodeSuccessCallback,
-                    qrCodeErrorCallback
-                );
-            });
-        }
-
-        function stopScanner() {
-            if (html5QrcodeScanner) {
-                html5QrcodeScanner.stop()
-                    .then(() => {
-                        document.getElementById('preview').style.display = 'none';
-                        document.getElementById('scan-result').style.display = 'none';
-                    })
-                    .catch(err => {
-                        console.error('Error stopping scanner:', err);
-                    });
             }
         }
 
