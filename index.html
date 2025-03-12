@@ -201,7 +201,7 @@
                 <!-- Energy Chart -->
                 <div class="col-lg-8">
                     <div class="card">
-                        <div class="card-header" id="dashboardGraphTitle">Loading graph...</div>
+                        <div class="card-header" id="dashboardGraphTitle">Energy Consumption</div>
                         <div class="card-body">
                             <canvas id="consumptionChart"></canvas>
                         </div>
@@ -510,7 +510,7 @@
             const checkElementExistence = setInterval(() => {
                 if (document.getElementById('dashboardGraphTitle')) {
                     console.log('Element exists!');
-                    document.getElementById('dashboardGraphTitle').innerText = `Energy Consumption:\n${timeRangeString}`;
+                    document.getElementById('dashboardGraphTitle').innerText += `:\n${timeRangeString}`;
                     clearInterval(checkElementExistence);
                 } else {
                     console.log('Element does not exist yet...');
