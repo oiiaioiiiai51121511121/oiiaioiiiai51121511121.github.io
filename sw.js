@@ -15,7 +15,6 @@ const ASSETS = [
     'https://unpkg.com/@zxing/library@0.18.6/umd/index.min.js',
     'https://cdn.jsdelivr.net/npm/chart.js',
     'https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js',
-    'https://polyfill.io/v3/polyfill.min.js?features=default',
     'https://www.gstatic.com/firebasejs/7.13.2/firebase-app.js',
     'https://www.gstatic.com/firebasejs/7.13.2/firebase-analytics.js',
     'https://www.gstatic.com/firebasejs/7.13.2/firebase-auth.js',
