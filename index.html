@@ -177,8 +177,8 @@
                     <div class="card consumption-card">
                         <div class="card-body text-center">
                             <h5><i class="bi bi-lightning-charge text-warning"></i> Current Usage</h5>
-                            <h2 class="display-4">2.4 kW</h2>
-                            <p class="text-muted">≈ $0.18/hr</p>
+                            <h2 class="display-4">0.0 kW</h2>
+                            <p class="text-muted">≈ $0.00/hr</p>
                         </div>
                     </div>
                 </div>
@@ -398,135 +398,103 @@
             const ctx = document.getElementById('consumptionChart');
             
             consumptionChart = new Chart(ctx, {
-                type: 'bar',
-                data: {
-                    labels: Array.from({length: 24}, (_, i) => `${i}:00`),
-                    datasets: [{
-                        label: 'Energy Consumption (kWh)',
-                        data: [],
-                        backgroundColor: [],
-                        borderWidth: 1
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    plugins: {
-                        legend: { display: true },
-                        tooltip: { enabled: true },
-                        // title: {
-                        //     display: true,
-                        //     position: 'top'
-                        // }
-                    },
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            title: { display: true, text: 'kWh' }
-                        }
-                    }
-                }
+                /* keep existing chart config */
             });
 
-            fetch('power_consumption.csv')
-                .then(response => response.text())
-                .then(csvText => {
-                    const rows = csvText.trim().split('\n');
-                    const header = rows.shift().split(';');
+            // Firebase data initialization
+            const ref = firebase.database().ref('/power_consumption/');
+            ref.on("value", function(snapshot) {
+                const data = snapshot.val();
+                if (!data) return;
+
+                let hourlyConsumption = new Array(24).fill(0);
+                let minTime = Infinity;
+                let maxTime = -Infinity;
+                let latestEntry = null;
+                let latestTime = 0;
+
+                // Process all data entries
+                for (const timestamp in data) {
+                    const entry = data[timestamp];
+                    const date = new Date(timestamp);
+                    const hour = date.getHours();
                     
-                    let lastDate = null;
-                    const hourlyConsumption = new Array(24).fill(0);
-                    let minTime = null;
-                    let maxTime = null;
-                    let fetchedDate = '';
+                    // Convert power values to numbers and sum
+                    const fanPower = parseFloat(entry.fan_power) || 0;
+                    const ledPower = parseFloat(entry.led_power) || 0;
+                    const solarPower = parseFloat(entry.solar_power) || 0;
+                    const totalPower = fanPower + ledPower + solarPower;
+                    
+                    // Accumulate hourly consumption (assuming each entry represents 1 minute)
+                    hourlyConsumption[hour] += totalPower * (1/60);
 
-                    // First pass: Find latest date
-                    rows.forEach(row => {
-                        const cells = row.split(';');
-                        if (cells.length < 9) return;
-                        const [d, m, y] = cells[0].split('/').map(Number);
-                        const currentDate = new Date(y, m-1, d);
-                        if (!lastDate || currentDate > lastDate) {
-                            lastDate = currentDate;
-                            fetchedDate = cells[0];
-                        }
-                    });
+                    // Track time range
+                    const entryTime = date.getTime();
+                    if (entryTime < minTime) minTime = entryTime;
+                    if (entryTime > maxTime) maxTime = entryTime;
 
-                    // Second pass: Process data and track times
-                    rows.forEach(row => {
-                        const cells = row.split(';');
-                        if (cells.length < 9 || cells[0] !== fetchedDate) return;
-
-                        // Parse datetime
-                        const [day, month, year] = cells[0].split('/').map(Number);
-                        const [h, m, s] = cells[1].split(':').map(Number);
-                        const currentDateTime = new Date(year, month-1, day, h, m, s);
-
-                        // Update time range
-                        if (!minTime || currentDateTime < minTime) minTime = currentDateTime;
-                        if (!maxTime || currentDateTime > maxTime) maxTime = currentDateTime;
-
-                        // Aggregate consumption
-                        const power = parseFloat(cells[2]);
-                        const hour = h;
-                        if (!isNaN(hour) && !isNaN(power)) {
-                            hourlyConsumption[hour] += power * (1/60);
-                        }
-                    });
-
-                    // Find peak hours
-                    const maxConsumption = Math.max(...hourlyConsumption);
-                    const peakHours = hourlyConsumption
-                        .map((v, i) => v === maxConsumption ? i : null)
-                        .filter(v => v !== null);
-
-                    // Format time range
-                    const formatTime = (date, includeDate) => {
-                        const pad = n => String(n).padStart(2, '0');
-                        const datePart = includeDate
-                            ? `${pad(date.getDate())}/${pad(date.getMonth()+1)}/${date.getFullYear()} `
-                            : ``;
-                        const timePart = `${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
-                        return `${datePart}${timePart}`;
-                    };
-
-                    // Usage example (with the boolean parameter):
-                    const timeRange = `${formatTime(minTime, true)} - ${formatTime(maxTime, false)}`;
-
-                    // Create color array
-                    const backgroundColors = hourlyConsumption.map((v, hour) => 
-                        peakHours.includes(hour) 
-                            ? 'rgba(246, 241, 160, 1.0)'  // Red for peaks
-                            : 'rgba(54, 162, 235, 0.5)'  // Blue for normal
-                    );
-
-                    // Update chart
-                    consumptionChart.data.datasets[0].data = hourlyConsumption;
-                    consumptionChart.data.datasets[0].backgroundColor = backgroundColors;
-
-                    // consumptionChart.options.plugins.title = {
-                    //     display: true,
-                    //     text: [
-                    //         `Peak Hours: ${peakHours.map(h => `${h}:00`).join(', ')}`,
-                    //         `Time Range: ${timeRange}`
-                    //     ]
-                    // };
-                    peakHoursString = peakHours.map(h => `${h}:00`).join(', ');
-                    timeRangeString = timeRange;
-
-                    consumptionChart.update();
-                })
-                .catch(error => console.error('Error:', error));
-
-            const checkElementExistence = setInterval(() => {
-                if (document.getElementById('dashboardGraphTitle')) {
-                    console.log('Element exists!');
-                    document.getElementById('dashboardGraphTitle').innerText += `:\n${timeRangeString}`;
-                    clearInterval(checkElementExistence);
-                } else {
-                    console.log('Element does not exist yet...');
+                    // Track latest entry for current usage
+                    if (entryTime > latestTime) {
+                        latestTime = entryTime;
+                        latestEntry = entry;
+                    }
                 }
-            }, 100); // Check every 100 milliseconds
 
+                // Update current usage display
+                if (latestEntry) {
+                    const currentUsage = 
+                        parseFloat(latestEntry.fan_power) + 
+                        parseFloat(latestEntry.led_power) + 
+                        parseFloat(latestEntry.solar_power);
+                        
+                    document.querySelector('.consumption-card h2').textContent = 
+                        `${currentUsage.toFixed(1)} kW`;
+                    
+                    // Update hourly rate (assuming $0.075/kWh)
+                    const hourlyRate = currentUsage * 0.075;
+                    document.querySelector('.consumption-card .text-muted').textContent = 
+                        `≈ $${hourlyRate.toFixed(2)}/hr`;
+                }
+
+                // Calculate peak hours
+                const maxConsumption = Math.max(...hourlyConsumption);
+                const peakHours = hourlyConsumption
+                    .map((v, i) => v === maxConsumption ? i : null)
+                    .filter(v => v !== null);
+
+                // Create chart colors
+                const backgroundColors = hourlyConsumption.map((v, hour) => 
+                    peakHours.includes(hour) 
+                        ? 'rgba(246, 241, 160, 1.0)'  // Yellow for peaks
+                        : 'rgba(54, 162, 235, 0.5)'   // Blue for normal
+                );
+
+                // Format time range
+                const formatTime = (ts) => new Date(ts).toLocaleString('en-GB', {
+                    day: '2-digit', month: '2-digit', year: 'numeric',
+                    hour: '2-digit', minute: '2-digit'
+                });
+
+                // Update chart
+                consumptionChart.data.datasets[0].data = hourlyConsumption;
+                consumptionChart.data.datasets[0].backgroundColor = backgroundColors;
+                consumptionChart.options.plugins.title = {
+                    display: true,
+                    text: [
+                        `Peak Hours: ${peakHours.map(h => `${h}:00`).join(', ')}`,
+                        `Time Range: ${formatTime(minTime)} - ${formatTime(maxTime)}`
+                    ]
+                };
+                consumptionChart.update();
+
+                // Update graph title
+                const titleElement = document.getElementById('dashboardGraphTitle');
+                if (titleElement) {
+                    titleElement.textContent = `Energy Consumption: ${formatTime(minTime)} - ${formatTime(maxTime)}`;
+                }
+            }, function(error) {
+                console.error("Error fetching data:", error);
+            });
         });
 
         function showPage(pageNumber, linkElement) {
