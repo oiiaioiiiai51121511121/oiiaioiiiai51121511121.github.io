@@ -141,19 +141,52 @@
             display: none;
             top: 50%;
         }
+        #loginOverlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.9);
+            z-index: 2000;
+            display: none;
+        }
+        .login-scanner {
+            position: relative;
+            height: 100vh;
+        }
+        .login-title {
+            position: absolute;
+            top: 20%;
+            left: 50%;
+            transform: translateX(-50%);
+            color: white;
+            font-size: 1.5rem;
+            text-align: center;
+            z-index: 2001;
+        }
     </style>
 </head>
 <body>
+    <div id="loginOverlay">
+        <h2 class="login-title">Login with your credentials QR code</h2>
+        <div class="login-scanner">
+            <video id="loginPreview" class="w-100" style="height: 100vh; object-fit: cover;"></video>
+            <div class="scan-overlay"></div>
+        </div>
+    </div>
+
     <nav class="navbar navbar-dark bg-primary header-top py-2">
         <div class="container-fluid d-flex align-items-center">
-            <!-- Logo Section -->
             <span class="navbar-brand mb-0 h1 gap-2 d-flex align-items-center">
                 <img src="logo-1024.svg" height="28" class="d-inline-block align-middle" alt="Logo">
                 <span class="fs-4">SmartWatt</span>
             </span>
-    
-            <!-- Install Button -->
-            <div class="d-flex align-items-center">
+            <div class="d-flex align-items-center gap-2">
+                <button id="logout-button" class="btn btn-light py-1 px-3" style="display: none;">
+                    <i class="bi bi-box-arrow-right fs-5"></i>
+                    <span class="d-none d-sm-inline ms-2 fs-5">Logout</span>
+                </button>
                 <button id="install-button" class="btn btn-light py-1 px-3" style="display: none;">
                     <i class="bi bi-download fs-5"></i>
                     <span class="d-none d-sm-inline ms-2 fs-5">Install</span>
@@ -237,6 +270,31 @@
                                 </a>
                             </div>
                         </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-body text-center">
+                        <h5><i class="bi bi-gear text-primary"></i> Appliance Control</h5>
+                        <div class="form-check form-switch form-switch-lg my-3">
+                            <input class="form-check-input" type="checkbox" role="switch" id="lightSwitch">
+                            <label class="form-check-label" for="lightSwitch">Light Control</label>
+                        </div>
+                        <div class="form-check form-switch form-switch-lg my-3">
+                            <input class="form-check-input" type="checkbox" role="switch" id="fanSwitch">
+                            <label class="form-check-label" for="fanSwitch">Fan Control</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-8">
+                <div class="card">
+                    <div class="card-header">System Report</div>
+                    <div class="card-body" id="reportContent">
+                        <!-- Markdown content will be loaded here -->
                     </div>
                 </div>
             </div>
@@ -685,6 +743,114 @@
         }
 
         let originalPaymentContent = document.querySelector('#page3 .container').innerHTML;
+
+
+
+
+
+
+
+
+
+        // Add IndexedDB functions
+        let db;
+        const initDB = () => {
+            const request = indexedDB.open('SmartWattDB', 1);
+            request.onupgradeneeded = (e) => {
+                db = e.target.result;
+                if (!db.objectStoreNames.contains('auth')) {
+                    db.createObjectStore('auth', { keyPath: 'id' });
+                }
+            };
+            request.onsuccess = (e) => {
+                db = e.target.result;
+                checkLoginStatus();
+            };
+        };
+
+        const checkLoginStatus = () => {
+            const tx = db.transaction('auth', 'readonly');
+            const store = tx.objectStore('auth');
+            const request = store.get('loginStatus');
+            request.onsuccess = (e) => {
+                const result = e.target.result;
+                if (!result || !result.status) {
+                    showLoginOverlay();
+                } else {
+                    hideLoginOverlay();
+                }
+            };
+        };
+
+        const setLoginStatus = (status) => {
+            const tx = db.transaction('auth', 'readwrite');
+            const store = tx.objectStore('auth');
+            store.put({ id: 'loginStatus', status: status });
+        };
+
+        // Login scanner logic
+        let loginCodeReader;
+        const initLoginScanner = () => {
+            loginCodeReader = new ZXing.BrowserMultiFormatReader();
+            const videoElement = document.getElementById('loginPreview');
+            loginCodeReader.decodeFromVideoDevice(null, videoElement, (result, err) => {
+                if (result) {
+                    setLoginStatus(true);
+                    hideLoginOverlay();
+                    loginCodeReader.reset();
+                }
+            });
+        };
+
+        const showLoginOverlay = () => {
+            document.getElementById('loginOverlay').style.display = 'block';
+            initLoginScanner();
+        };
+
+        const hideLoginOverlay = () => {
+            document.getElementById('loginOverlay').style.display = 'none';
+            document.getElementById('logout-button').style.display = 'block';
+            if (loginCodeReader) loginCodeReader.reset();
+        };
+
+        // Logout button handler
+        document.getElementById('logout-button').addEventListener('click', () => {
+            setLoginStatus(false);
+            document.getElementById('logout-button').style.display = 'none';
+            showLoginOverlay();
+        });
+
+        // Initialize DB when DOM loads
+        document.addEventListener('DOMContentLoaded', () => {
+            initDB();
+            
+            // Firebase control listeners
+            const controlRef = firebase.database().ref('/control/');
+            controlRef.on('value', (snapshot) => {
+                const data = snapshot.val();
+                if (data) {
+                    document.getElementById('lightSwitch').checked = data.light || false;
+                    document.getElementById('fanSwitch').checked = data.fan || false;
+                }
+            });
+
+            // Control switch handlers
+            document.getElementById('lightSwitch').addEventListener('change', (e) => {
+                firebase.database().ref('/control/light').set(e.target.checked);
+            });
+            document.getElementById('fanSwitch').addEventListener('change', (e) => {
+                firebase.database().ref('/control/fan').set(e.target.checked);
+            });
+
+            // Report content loader
+            const reportRef = firebase.database().ref('/report/');
+            reportRef.on('value', (snapshot) => {
+                const data = snapshot.val();
+                if (data) {
+                    document.getElementById('reportContent').innerHTML = data.content;
+                }
+            });
+        });
     </script>
 </body>
 </html>
