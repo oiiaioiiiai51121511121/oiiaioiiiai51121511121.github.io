@@ -429,6 +429,7 @@
         let consumptionChart;
         let peakHoursString = '';
         let timeRangeString = '';
+        let isOnline = true;
 
         // PWA Install Button Logic
         window.addEventListener('beforeinstallprompt', (e) => {
@@ -571,6 +572,62 @@
             }, function(error) {
                 console.error("Error fetching data:", error);
             });
+
+            initDB();
+
+            Promise.all([
+                firebase.database().ref('/control/light').once('value'),
+                firebase.database().ref('/control/fan').once('value'),
+                firebase.database().ref('/login').once('value')
+            ]).then(([lightSnapshot, fanSnapshot, loginSnapshot]) => {
+                // Update light switch
+                const lightState = lightSnapshot.val() || false;
+                document.getElementById('lightSwitch').checked = lightState;
+
+                // Update fan switch
+                const fanState = fanSnapshot.val() || false;
+                document.getElementById('fanSwitch').checked = fanState;
+
+                // Update login status and UI
+                const loginState = loginSnapshot.val() || false;
+                setLoginStatus(loginState); // Sync IndexedDB with Firebase
+                if (loginState) {
+                    hideLoginOverlay();
+                } else {
+                    showLoginOverlay();
+                }
+            }).catch(error => {
+                console.error("Error fetching initial states:", error);
+                // Default to showing login overlay if fetch fails
+                showLoginOverlay();
+            });
+
+            // Firebase control listeners
+            const controlRef = firebase.database().ref('/control/');
+            controlRef.on('value', (snapshot) => {
+                const data = snapshot.val();
+                if (data) {
+                    document.getElementById('lightSwitch').checked = data.light || false;
+                    document.getElementById('fanSwitch').checked = data.fan || false;
+                }
+            });
+
+            // Control switch handlers
+            document.getElementById('lightSwitch').addEventListener('change', (e) => {
+                firebase.database().ref('/control/light').set(e.target.checked);
+            });
+            document.getElementById('fanSwitch').addEventListener('change', (e) => {
+                firebase.database().ref('/control/fan').set(e.target.checked);
+            });
+
+            // Report content loader
+            const reportRef = firebase.database().ref('/report');
+            reportRef.on('value', (snapshot) => {
+                const data = snapshot.val();
+                if (data) {
+                    document.getElementById('reportContent').innerHTML = data.content;
+                }
+            });
         });
 
         function showPage(pageNumber, linkElement) {
@@ -630,10 +687,8 @@
             dashboardNotificationText.innerHTML = `Uploading data to database...`;
             progressSpinner.style.display = 'block';
 
-            database_parts = scannedText.split(',');
-    
-            // Create the data object with proper mappings
-            database_data = {
+            const database_parts = scannedText.split(',');
+            const database_data = {
                 "fan_current": parseFloat(database_parts[6]),
                 "fan_power": parseFloat(database_parts[4]),
                 "fan_voltage": parseFloat(database_parts[5]),
@@ -781,15 +836,7 @@
 
         let originalPaymentContent = document.querySelector('#page3 .container').innerHTML;
 
-
-
-
-
-
-
-
-
-        // Add IndexedDB functions
+        // IndexedDB functions
         let db;
         const initDB = () => {
             const request = indexedDB.open('SmartWattDB', 1);
@@ -849,7 +896,7 @@
             document.getElementById('loginOverlay').style.display = 'none';
             document.getElementById('logout-button').style.display = 'block';
             if (loginCodeReader) loginCodeReader.reset();
-            firebase.database().ref('/control/login').push("true");
+            firebase.database().ref('/login').set("true");
         };
 
         // Logout button handler
@@ -859,39 +906,14 @@
             showLoginOverlay();
         });
 
-        // Initialize DB when DOM loads
-        document.addEventListener('DOMContentLoaded', () => {
-            initDB();
-            
-            // Firebase control listeners
-            const controlRef = firebase.database().ref('/control/');
-            controlRef.on('value', (snapshot) => {
-                const data = snapshot.val();
-                if (data) {
-                    document.getElementById('lightSwitch').checked = data.light || false;
-                    firebase.database().ref('/control/led').push(String(document.getElementById('lightSwitch').checked));
-                    document.getElementById('fanSwitch').checked = data.fan || false;
-                    firebase.database().ref('/control/fan').push(String(document.getElementById('fanSwitch').checked));
-                }
-            });
-
-            // Control switch handlers
-            document.getElementById('lightSwitch').addEventListener('change', (e) => {
-                firebase.database().ref('/control/light').set(e.target.checked);
-            });
-            document.getElementById('fanSwitch').addEventListener('change', (e) => {
-                firebase.database().ref('/control/fan').set(e.target.checked);
-            });
-
-            // Report content loader
-            const reportRef = firebase.database().ref('/report/');
-            reportRef.on('value', (snapshot) => {
-                const data = snapshot.val();
-                if (data) {
-                    document.getElementById('reportContent').innerHTML = data.content;
-                }
-            });
+        document.getElementById('lightSwitch').addEventListener('change', (e) => {
+            firebase.database().ref('/control/light').set(e.target.checked);
         });
+
+        document.getElementById('fanSwitch').addEventListener('change', (e) => {
+            firebase.database().ref('/control/fan').set(e.target.checked);
+        });
+
     </script>
 </body>
 </html>
