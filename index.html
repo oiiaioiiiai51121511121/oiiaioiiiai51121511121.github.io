@@ -251,7 +251,7 @@
                     <div class="card alert-card">
                         <div class="card-header">Insights</div>
                         <div class="card-body">
-                            <div class="list-group">
+                            <div class="list-group" id="insightMessages">
                                 <a class="list-group-item dashboardInsightDanger">
                                     <i class="bi bi-exclamation-octagon text-danger me-2"></i>
                                     System Overload Detected! Load Disconnected
@@ -431,6 +431,33 @@
         let timeRangeString = '';
         let loginStatusListener;
         let isOnline = true;
+        let isLogin;
+        let reportContent;
+        let insightMessagesOnline = "";
+        let insightMessagesReport = "";
+        const onlineStatusListeners = new Set();
+
+        function updateInsight() {
+            document.getElementById('insightMessages').innerHTML = insightMessagesOnline + insightMessagesReport;
+        }
+
+        function setIsOnline(status) {
+            if (isOnline !== status) {
+                isOnline = status;
+                onlineStatusListeners.forEach(callback => callback(status));
+                if (status) {
+                    insightMessagesOnline = '<a class="list-group-item list-group-item-action"><i class="bi bi-check-circle text-success me-2"></i>Electricity Meter Is Online</a>';
+                } else {
+                    insightMessagesOnline = '<a class="list-group-item dashboardInsightWarning"><i class="bi bi-exclamation-triangle text-warning me-2"></i>Electricity Meter Is Offline</a>'
+                }
+                updateInsight();
+            }
+        }
+
+        function onOnlineStatusChange(callback) {
+            onlineStatusListeners.add(callback);
+            return () => onlineStatusListeners.delete(callback);
+        }
 
         // PWA Install Button Logic
         window.addEventListener('beforeinstallprompt', (e) => {
@@ -570,18 +597,48 @@
                 if (titleElement) {
                     titleElement.textContent = `Energy Consumption: ${formatTime(minTime)} - ${formatTime(maxTime)}`;
                 }
+
+                setIsOnline(true);
             }, function(error) {
                 console.error("Error fetching data:", error);
+                setIsOnline(false);
             });
 
             loginStatusListener = database.ref('/login').on('value', snapshot => {
-                if (snapshot.val()) {
-                    hideLoginOverlay();
-                } else {
-                    showLoginOverlay();
+                if (snapshot.val() != isLogin) {
+                    if (snapshot.val()) {
+                        hideLoginOverlay();
+                    } else {
+                        showLoginOverlay();
+                    }
                 }
-                isOnline = true;
-            })
+                if (isLogin == null) { isLogin = snapshot.val(); }
+                setIsOnline(true);
+            }, error => {
+                    console.error('Error fetching login status:', error.message);
+                    showLoginOverlay();
+                    setIsOnline(false);
+                }
+            );
+
+            loginStatusListener = database.ref('/report').on('value', snapshot => {
+                if (snapshot.val() != reportContent) {
+                    if (snapshot.val() != reportContent) {
+                        document.getElementById('reportContent').innerHTML = snapshot.val();
+                        insightMessagesReport = "";
+                    } else {
+                        document.getElementById('reportContent').innerHTML = "No report.";
+                        insightMessagesReport = '<a class="list-group-item list-group-item-action"><i class="bi bi-lightbulb text-primary me-2"></i>Get a power consumption report</a>';
+                    }
+                }
+                if (reportContent == null) { reportContent = snapshot.val(); }
+                setIsOnline(true);
+            }, error => {
+                    console.error('Error fetching report content:', error.message);
+                    showLoginOverlay();
+                    setIsOnline(false);
+                }
+            );
 
             Promise.all([
                 firebase.database().ref('/control/led').once('value'),
@@ -589,10 +646,10 @@
             ]).then(([lightSnapshot, fanSnapshot]) => {
                 document.getElementById('lightSwitch').checked = lightSnapshot.val() || false;
                 document.getElementById('fanSwitch').checked = fanSnapshot.val() || false;
-                isOnline = true;
+                setIsOnline(true);
             }).catch(error => {
                 console.error("Error fetching control states:", error);
-                isOnline = false;
+                setIsOnline(false);
                 document.getElementById('lightSwitch').checked = false;
                 document.getElementById('fanSwitch').checked = false;
             });
@@ -604,15 +661,7 @@
             document.getElementById('fanSwitch').addEventListener('change', (e) => {
                 firebase.database().ref('/control/fan').set(e.target.checked);
             });
-
-            // Report content loader
-            const reportRef = firebase.database().ref('/report');
-            reportRef.on('value', (snapshot) => {
-                const data = snapshot.val();
-                if (data) {
-                    document.getElementById('reportContent').innerHTML = data.content;
-                }
-            });
+            
         });
 
         function showPage(pageNumber, linkElement) {
@@ -687,7 +736,12 @@
             };
 
             // Write to Firebase using timestamp as the key
-            firebase.database().ref(`/power_consumption/${database_parts[0]}`).push(database_data);
+            firebase.database().ref(`/power_consumption/${database_parts[0]}`).push(database_data)
+                .then(() => setIsOnline(true))
+                .catch(error => {
+                    console.error("Write failed:", error);
+                    setIsOnline(false);
+                });
             
             // Show notification
             setTimeout(() => {
@@ -825,25 +879,60 @@
         };
 
         const hideLoginOverlay = () => {
+            // Stop camera stream
+            const videoElement = document.getElementById('loginPreview');
+            if (videoElement.srcObject) {
+                videoElement.srcObject.getTracks().forEach(track => track.stop());
+                videoElement.srcObject = null;
+            }
+
+            // Reset QR scanner
+            if (loginCodeReader) {
+                loginCodeReader.reset();
+                loginCodeReader = null;
+            }
+
+            // Update UI
             document.getElementById('loginOverlay').style.display = 'none';
             document.getElementById('logout-button').style.display = 'block';
-            if (loginCodeReader) loginCodeReader.reset();
-            firebase.database().ref('/login').set(true);
+            
+            // Update database
+            firebase.database().ref('/login').set(true)
+                .then(() => setIsOnline(true))
+                .catch(error => {
+                    console.error("Login update failed:", error);
+                    setIsOnline(false);
+                });
         };
 
         // Logout button handler
         document.getElementById('logout-button').addEventListener('click', () => {
             document.getElementById('logout-button').style.display = 'none';
-            firebase.database().ref('/login').set(false);
+            firebase.database().ref('/login').set(false)
+                .then(() => setIsOnline(true))
+                .catch(error => {
+                console.error("Login update failed:", error);
+                setIsOnline(false);
+                });
             showLoginOverlay();
         });
 
         document.getElementById('lightSwitch').addEventListener('change', (e) => {
-            firebase.database().ref('/control/light').set(e.target.checked);
+            firebase.database().ref('/control/led').set(e.target.checked)
+                .then(() => setIsOnline(true))
+                .catch(error => {
+                console.error("Control update failed:", error);
+                setIsOnline(false);
+                });
         });
 
         document.getElementById('fanSwitch').addEventListener('change', (e) => {
-            firebase.database().ref('/control/fan').set(e.target.checked);
+            firebase.database().ref('/control/fan').set(e.target.checked)
+                .then(() => setIsOnline(true))
+                .catch(error => {
+                console.error("Control update failed:", error);
+                setIsOnline(false);
+            });
         });
 
     </script>
