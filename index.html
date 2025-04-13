@@ -220,7 +220,7 @@
                 </div>
 
                 <div class="col-md-4">
-                    <div class="card">
+                    <div class="card" id="daily-cost">
                         <div class="card-body text-center">
                             <h5><i class="bi bi-currency-dollar text-success"></i> Daily Cost</h5>
                             <h2 class="display-4">$0.00</h2>
@@ -230,7 +230,7 @@
                 </div>
 
                 <div class="col-md-4">
-                    <div class="card">
+                    <div class="card" id="carbon-footprint">
                         <div class="card-body text-center">
                             <h5><i class="bi bi-globe text-primary"></i> Carbon Footprint</h5>
                             <h2 class="display-4">0 kg</h2>
@@ -692,8 +692,9 @@
             document.querySelector('.active-page').classList.remove('active-page');
             document.getElementById(`page${pageNumber}`).classList.add('active-page');
             
-            // Stop any existing scanner when leaving page 2
-            if (currentPage === 2 && pageNumber !== 2 && codeReader) {
+            if (pageNumber === 2) {
+                startScanner();
+            } else if (codeReader) {
                 codeReader.reset();
                 const videoElement = document.getElementById('preview');
                 if (videoElement.srcObject) {
@@ -701,56 +702,34 @@
                     videoElement.srcObject = null;
                 }
             }
-            
-            if (pageNumber === 2) {
-                startScanner();
-            }
-            currentPage = pageNumber;
         }
 
-        async function startScanner() {
-            try {
-                if (codeReader) {
-                    await codeReader.reset();
-                }
-                
-                const videoElement = document.getElementById('preview');
-                videoElement.style.display = 'block';
-                
-                codeReader = new ZXing.BrowserMultiFormatReader();
-                
-                const constraints = {
-                    video: {
-                        facingMode: 'environment',
-                        width: { min: 1280, ideal: 1920, max: 2560 },
-                        height: { min: 720, ideal: 1080, max: 1440 }
-                    }
-                };
-
-                const hints = new Map();
-                hints.set(ZXing.DecodeHintType.TRY_HARDER, true);
-                hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS, [ZXing.BarcodeFormat.QR_CODE]);
-
-                await codeReader.decodeFromConstraints(
-                    constraints,
-                    videoElement,
-                    (result, error) => {
-                        if (result) {
-                            codeReader.reset();
-                            showScanNotification(result.text);
-                            showPage(1, document.querySelector('#page1-link'));
-                        }
-                        if (error && !(error instanceof ZXing.NotFoundException)) {
-                            console.error('Scan error:', error);
-                            alert('Scanning failed: ' + error.message);
-                        }
-                    },
-                    hints
-                );
-            } catch (error) {
-                console.error('Scanner initialization failed:', error);
-                alert('Camera access denied. Please enable camera permissions.');
+        function startScanner() {
+            if (codeReader) {
+                codeReader.reset();
             }
+            codeReader = new ZXing.BrowserMultiFormatReader();
+            const videoElement = document.getElementById('preview');
+            const constraints = {
+                video: {
+                    facingMode: 'environment',
+                    width: { min: 1280, ideal: 1920, max: 2560 },
+                    height: { min: 720, ideal: 1080, max: 1440 }
+                }
+            };
+            
+            codeReader.decodeFromConstraints(constraints, videoElement, (result, err) => {
+                if (result) {
+                    codeReader.reset();
+                    showPage(1, document.querySelector('.nav-link'));
+                    showScanNotification(result.text);
+                }
+                if (err && !(err instanceof ZXing.NotFoundException)) {
+                    console.error(err);
+                }
+            }).catch(err => {
+                console.error('Error starting scanner:', err);
+            });
         }
 
         function showScanNotification(scannedText) {
@@ -857,15 +836,15 @@
         async function handlePayment() {
             const paymentArea = document.getElementById('payment-result');
             const method = document.querySelector('input[name="payment"]:checked').value;
-            
             const isPrePayment = document.querySelector('[data-payment-type="pre-payment"].active');
-            let amount = paymentNowPay; // Default to pay-as-you-go amount
-
+            
+            let amount = paymentNowPay; // Default to pay-as-you-go
+            
             if (isPrePayment) {
-                const inputValue = document.querySelector('#payment-input input')?.value;
-                amount = parseFloat(inputValue) || 0;
-                // Add to existing balance (paymentPrePay is negative balance)
-                amount = Math.abs(amount) + Math.abs(paymentPrePay);
+                const inputElement = document.querySelector('#payment-input input');
+                const inputValue = inputElement ? inputElement.value : '0';
+                const topup = parseFloat(inputValue) || 0;
+                amount = Math.abs(topup);
             }
 
             // Show processing state
