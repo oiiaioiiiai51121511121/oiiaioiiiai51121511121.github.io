@@ -456,7 +456,33 @@
             const ctx = document.getElementById('consumptionChart');
             
             consumptionChart = new Chart(ctx, {
-                /* keep existing chart config */
+                type: 'bar',
+                data: {
+                    labels: Array.from({length: 24}, (_, i) => `${i}:00`),
+                    datasets: [{
+                        label: 'Energy Consumption (kWh)',
+                        data: [],
+                        backgroundColor: [],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: { display: true },
+                        tooltip: { enabled: true },
+                        // title: {
+                        //     display: true,
+                        //     position: 'top'
+                        // }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: { display: true, text: 'kWh' }
+                        }
+                    }
+                }
             });
 
             // Firebase data initialization
@@ -466,37 +492,25 @@
                 if (!data) return;
 
                 let hourlyConsumption = new Array(24).fill(0);
-                let minTime = Infinity;
-                let maxTime = -Infinity;
                 let latestEntry = null;
                 let latestTime = 0;
 
                 // Process all data entries
-                for (const timestamp in data) {
+                Object.keys(data).forEach(timestamp => {
                     const entry = data[timestamp];
                     const date = new Date(timestamp);
-                    const hour = date.getHours();
                     
-                    // Convert power values to numbers and sum
-                    const fanPower = parseFloat(entry.fan_power) || 0;
-                    const ledPower = parseFloat(entry.led_power) || 0;
-                    const solarPower = parseFloat(entry.solar_power) || 0;
-                    const totalPower = fanPower + ledPower + solarPower;
-                    
-                    // Accumulate hourly consumption (assuming each entry represents 1 minute)
-                    hourlyConsumption[hour] += totalPower * (1/60);
-
-                    // Track time range
+                    // Track latest entry
                     const entryTime = date.getTime();
-                    if (entryTime < minTime) minTime = entryTime;
-                    if (entryTime > maxTime) maxTime = entryTime;
-
-                    // Track latest entry for current usage
                     if (entryTime > latestTime) {
                         latestTime = entryTime;
                         latestEntry = entry;
                     }
-                }
+
+                    // Accumulate hourly consumption (if needed)
+                    const hour = date.getHours();
+                    hourlyConsumption[hour] += (parseFloat(entry.fan_power) + parseFloat(entry.led_power) + parseFloat(entry.solar_power)) / 60;
+                });
 
                 // Update current usage display
                 if (latestEntry) {
