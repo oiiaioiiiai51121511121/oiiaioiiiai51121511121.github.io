@@ -898,14 +898,14 @@
             document.getElementById('loginOverlay').style.display = 'none';
             document.getElementById('logout-button').style.display = 'block';
             if (loginCodeReader) loginCodeReader.reset();
-            firebase.database().ref('/login').set("true");
+            firebase.database().ref('/login').set(true);
         };
 
         // Logout button handler
         document.getElementById('logout-button').addEventListener('click', () => {
             setLoginStatus(false);
             document.getElementById('logout-button').style.display = 'none';
-            firebase.database().ref('/login').set("false");
+            firebase.database().ref('/login').set(false);
             showLoginOverlay();
         });
 
