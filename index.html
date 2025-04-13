@@ -429,6 +429,7 @@
         let consumptionChart;
         let peakHoursString = '';
         let timeRangeString = '';
+        let loginStatusListener;
         let isOnline = true;
 
         // PWA Install Button Logic
@@ -573,7 +574,14 @@
                 console.error("Error fetching data:", error);
             });
 
-            initDB();
+            loginStatusListener = database.ref('/login').on('value', snapshot => {
+                const isLoggedIn = !!snapshot.val();
+                if (isLoggedIn) {
+                    hideLoginOverlay();
+                } else {
+                    showLoginOverlay();
+                }
+            });
 
             Promise.all([
                 firebase.database().ref('/control/led').once('value'),
@@ -818,47 +826,6 @@
         }
 
         let originalPaymentContent = document.querySelector('#page3 .container').innerHTML;
-
-        // IndexedDB functions
-        let db;
-        const initDB = () => {
-            const request = indexedDB.open('SmartWattDB', 1);
-            request.onupgradeneeded = (e) => {
-                db = e.target.result;
-                if (!db.objectStoreNames.contains('auth')) {
-                    db.createObjectStore('auth', { keyPath: 'id' });
-                }
-            };
-            request.onsuccess = (e) => {
-                db = e.target.result;
-                checkLoginStatus();
-            };
-        };
-
-        const checkLoginStatus = () => {
-            const tx = db.transaction('auth', 'readonly');
-            const store = tx.objectStore('auth');
-            const request = store.get('loginStatus');
-            request.onsuccess = (e) => {
-                const result = e.target.result;
-                const loginStatus = result ? result.status : false;
-                
-                // Sync to Firebase
-                firebase.database().ref('/login').set(loginStatus).then(() => {
-                    if (loginStatus) {
-                        hideLoginOverlay();
-                    } else {
-                        showLoginOverlay();
-                    }
-                });
-            };
-        };
-
-        const setLoginStatus = (status) => {
-            const tx = db.transaction('auth', 'readwrite');
-            const store = tx.objectStore('auth');
-            store.put({ id: 'loginStatus', status: status });
-        };
 
         // Login scanner logic
         let loginCodeReader;
