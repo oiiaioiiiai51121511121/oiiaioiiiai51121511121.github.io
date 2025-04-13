@@ -879,10 +879,12 @@
             const videoElement = document.getElementById('loginPreview');
             loginCodeReader.decodeFromVideoDevice(null, videoElement, (result, err) => {
                 console.log(result)
-                if (result.text == "true") {
-                    setLoginStatus(true);
-                    hideLoginOverlay();
-                    loginCodeReader.reset();
+                if (result) {
+                    if (result.text == "true") {
+                        setLoginStatus(true);
+                        hideLoginOverlay();
+                        loginCodeReader.reset();
+                    }
                 }
             });
         };
