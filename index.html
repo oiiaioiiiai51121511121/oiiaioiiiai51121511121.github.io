@@ -577,29 +577,12 @@
 
             Promise.all([
                 firebase.database().ref('/control/led').once('value'),
-                firebase.database().ref('/control/fan').once('value'),
-                firebase.database().ref('/login').once('value')
-            ]).then(([lightSnapshot, fanSnapshot, loginSnapshot]) => {
-                // Update light switch
-                const lightState = lightSnapshot.val() || false;
-                document.getElementById('lightSwitch').checked = lightState;
-
-                // Update fan switch
-                const fanState = fanSnapshot.val() || false;
-                document.getElementById('fanSwitch').checked = fanState;
-
-                // Update login status and UI
-                const loginState = loginSnapshot.val() || false;
-                setLoginStatus(loginState); // Sync IndexedDB with Firebase
-                if (loginState) {
-                    hideLoginOverlay();
-                } else {
-                    showLoginOverlay();
-                }
+                firebase.database().ref('/control/fan').once('value')
+            ]).then(([lightSnapshot, fanSnapshot]) => {
+                document.getElementById('lightSwitch').checked = lightSnapshot.val() || false;
+                document.getElementById('fanSwitch').checked = fanSnapshot.val() || false;
             }).catch(error => {
-                console.error("Error fetching initial states:", error);
-                // Default to showing login overlay if fetch fails
-                showLoginOverlay();
+                console.error("Error fetching control states:", error);
             });
 
             // Firebase control listeners
@@ -858,11 +841,16 @@
             const request = store.get('loginStatus');
             request.onsuccess = (e) => {
                 const result = e.target.result;
-                if (!result || !result.status) {
-                    showLoginOverlay();
-                } else {
-                    hideLoginOverlay();
-                }
+                const loginStatus = result ? result.status : false;
+                
+                // Sync to Firebase
+                firebase.database().ref('/login').set(loginStatus).then(() => {
+                    if (loginStatus) {
+                        hideLoginOverlay();
+                    } else {
+                        showLoginOverlay();
+                    }
+                });
             };
         };
 
@@ -878,7 +866,6 @@
             loginCodeReader = new ZXing.BrowserMultiFormatReader();
             const videoElement = document.getElementById('loginPreview');
             loginCodeReader.decodeFromVideoDevice(null, videoElement, (result, err) => {
-                console.log(result)
                 if (result) {
                     if (result.text == "true") {
                         setLoginStatus(true);
