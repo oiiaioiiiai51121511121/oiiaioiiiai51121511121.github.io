@@ -270,8 +270,8 @@
                     
                     <!-- Appliance Control Card -->
                     <div class="card alert-card">
+                        <div class="card-header">Appliance Control</div>
                         <div class="card-body text-center">
-                            <h5><i class="bi bi-gear text-primary"></i> Appliance Control</h5>
                             <div class="form-check form-switch form-switch-lg my-3">
                                 <input class="form-check-input" type="checkbox" role="switch" id="lightSwitch">
                                 <label class="form-check-label" for="lightSwitch">Light Control</label>
@@ -525,111 +525,90 @@
                 const data = snapshot.val();
                 if (!data) return;
 
-                let hourlyConsumption = new Array(24).fill(0);
-                let minTime = Infinity;
-                let maxTime = -Infinity;
-                let latestEntry = null;
-                let latestTime = 0;
-                let totalmWh = 0; // Initialize totalmWh
-
-                // Process all data entries
+                // Collect and sort all valid entries
+                let entries = [];
                 Object.keys(data).forEach(timestamp => {
                     const entry = data[timestamp];
                     const date = new Date(timestamp);
                     
-                    // Add null checks and default values
+                    // Validate entry and timestamp
                     if (!entry || isNaN(date.getTime())) return;
 
-                    const entryTime = date.getTime();
-                    
-                    // Handle invalid timestamps
-                    if (typeof entryTime !== 'number') return;
-
-                    if (entryTime < minTime) minTime = entryTime;
-                    if (entryTime > maxTime) maxTime = entryTime;
-                    
-                    // Track latest entry
-                    if (entryTime > latestTime) {
-                        latestTime = entryTime;
-                        latestEntry = entry;
-                    }
-
-                    // Convert power values to numbers with fallback
-                    const fanPower = parseFloat(entry.fan_power) || 0;
-                    const ledPower = parseFloat(entry.led_power) || 0;
-                    
-                    // Accumulate hourly consumption in mWh
-                    const hour = date.getHours();
-                    hourlyConsumption[hour] += (fanPower + ledPower);
-                    totalmWh += (fanPower + ledPower); // Add to total
+                    entries.push({
+                        ts: date.getTime(),
+                        fan: Math.max(0, parseFloat(entry.fan_power)) || 0, // mW
+                        led: Math.max(0, parseFloat(entry.led_power)) || 0  // mW
+                    });
                 });
 
-                // Update current usage display with fallback values
-                if (latestEntry) {
-                    const fanPower = parseFloat(latestEntry.fan_power) || 0;
-                    const ledPower = parseFloat(latestEntry.led_power) || 0;
-                    const currentUsageW = (fanPower + ledPower) / 1000; // Convert mW to W
-                    
-                    document.querySelector('.consumption-card h2').textContent = 
-                        `${currentUsageW.toFixed(1)} W`;
-                    
-                    // Calculate hourly cost (using kW * rate)
-                    const hourlyRate = (currentUsageW / 1000) * 50; // $50/kWh
-                    document.querySelector('.consumption-card .text-muted').textContent = 
-                        `≈ $${hourlyRate.toFixed(2)}/hr`;
+                // Sort entries chronologically
+                entries.sort((a, b) => a.ts - b.ts);
+
+                let hourlyEnergy = new Array(24).fill(0); // Wh per hour
+                let totalEnergyWh = 0;
+                let currentPowerW = 0;
+                let minTime = entries[0]?.ts || Date.now();
+                let maxTime = entries[entries.length-1]?.ts || Date.now();
+
+                // Calculate energy using trapezoidal integration
+                if (entries.length > 1) {
+                    for(let i = 1; i < entries.length; i++) {
+                        const prev = entries[i-1];
+                        const curr = entries[i];
+                        
+                        // Time difference in hours
+                        const hours = (curr.ts - prev.ts) / 3600000;
+                        if (hours <= 0) continue;
+
+                        // Average power in mW during this interval
+                        const avgPower = ((prev.fan + prev.led) + (curr.fan + curr.led)) / 2;
+                        
+                        // Energy in mWh = mW × hours
+                        const energy = avgPower * hours;
+                        
+                        // Convert to Wh and add to hourly total
+                        const hour = new Date(curr.ts).getHours();
+                        hourlyEnergy[hour] += energy / 1000;
+                        totalEnergyWh += energy / 1000;
+                    }
+
+                    // Get latest power reading
+                    const latest = entries[entries.length-1];
+                    currentPowerW = (latest.fan + latest.led) / 1000; // mW to W
                 }
 
-                // Convert totalmWh to kWh (1 kWh = 1,000,000 mWh)
-                const totalkWh = totalmWh / 1000000 || 0;
+                // Update current power display
+                document.querySelector('.consumption-card h2').textContent = 
+                    `${currentPowerW.toFixed(1)} W`;
                 
-                // Daily cost calculation
-                const dailyCost = totalkWh * 100; // $100/kWh
+                // Calculate hourly cost (realistic $1.5/kWh)
+                const hourlyCost = (currentPowerW / 1000) * 1.5; // Convert W to kW
+                document.querySelector('.consumption-card .text-muted').textContent = 
+                    `≈ $${hourlyCost.toFixed(2)}/hr`;
+
+                // Update daily totals
+                const dailyCost = (totalEnergyWh / 1000) * 1.5; // $1.5/kWh
                 document.getElementById('dailyCost').textContent = 
                     `$${dailyCost.toFixed(2)}`;
                 document.getElementById('dailyEnergy').textContent = 
-                    `${totalkWh.toFixed(1)} kWh today`;
+                    `${(totalEnergyWh / 1000).toFixed(1)} kWh today`;
 
-                // Carbon footprint calculation (200 kg/kWh)
-                const carbonFootprint = totalkWh * 200;
+                // Realistic carbon footprint (0.5 kg CO₂/kWh - global average)
+                const carbonFootprint = (totalEnergyWh / 1000) * 0.5;
                 document.getElementById('carbonFootprint').textContent = 
                     `${carbonFootprint.toFixed(1)} kg`;
 
-                // Calculate peak hours
-                const maxConsumption = Math.max(...hourlyConsumption);
-                const peakHours = hourlyConsumption
-                    .map((v, i) => v === maxConsumption ? i : null)
-                    .filter(v => v !== null);
-
-                // Create chart colors
-                const backgroundColors = hourlyConsumption.map((v, hour) => 
-                    peakHours.includes(hour) 
-                        ? 'rgba(246, 241, 160, 1.0)'  // Yellow for peaks
-                        : 'rgba(54, 162, 235, 0.5)'   // Blue for normal
-                );
-
-                // Format time range
-                const formatTime = (ts) => new Date(ts).toLocaleString('en-GB', {
-                    day: '2-digit', month: '2-digit', year: 'numeric',
-                    hour: '2-digit', minute: '2-digit'
-                });
-
                 // Update chart
-                consumptionChart.data.datasets[0].data = hourlyConsumption;
-                consumptionChart.data.datasets[0].backgroundColor = backgroundColors;
-                // consumptionChart.options.plugins.title = {
-                //     display: true,
-                //     text: [
-                //         `Peak Hours: ${peakHours.map(h => `${h}:00`).join(', ')}`,
-                //         `Time Range: ${formatTime(minTime)} - ${formatTime(maxTime)}`
-                //     ]
-                // };
+                consumptionChart.data.datasets[0].data = hourlyEnergy;
+                consumptionChart.options.scales.y.title.text = 'Wh';
                 consumptionChart.update();
 
-                // Update graph title
-                const titleElement = document.getElementById('dashboardGraphTitle');
-                if (titleElement) {
-                    titleElement.textContent = `Energy Consumption: ${formatTime(minTime)} - ${formatTime(maxTime)}`;
-                }
+                // Update graph title with time range
+                const formatTime = ts => new Date(ts).toLocaleString('en-GB', {
+                    day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit'
+                });
+                document.getElementById('dashboardGraphTitle').textContent = 
+                    `Energy Consumption: ${formatTime(minTime)} - ${formatTime(maxTime)}`;
 
                 setIsOnline(true);
             }, function(error) {
@@ -777,7 +756,7 @@
             };
 
             // Write to Firebase using timestamp as the key
-            firebase.database().ref(`/power_consumption/${database_parts[0]}`).push(database_data)
+            firebase.database().ref(`/power_consumption/${database_parts[0]}`).set(database_data)
                 .then(() => setIsOnline(true))
                 .catch(error => {
                     console.error("Write failed:", error);
