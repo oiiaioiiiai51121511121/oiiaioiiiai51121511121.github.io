@@ -576,7 +576,7 @@
             initDB();
 
             Promise.all([
-                firebase.database().ref('/control/light').once('value'),
+                firebase.database().ref('/control/led').once('value'),
                 firebase.database().ref('/control/fan').once('value'),
                 firebase.database().ref('/login').once('value')
             ]).then(([lightSnapshot, fanSnapshot, loginSnapshot]) => {
