@@ -575,12 +575,15 @@
             });
 
             loginStatusListener = database.ref('/login').on('value', snapshot => {
-                const isLoggedIn = !!snapshot.val();
-                if (isLoggedIn) {
+                if (snapshot.val()) {
                     hideLoginOverlay();
                 } else {
                     showLoginOverlay();
                 }
+                isOnline = true;
+            }).catch(error => {
+                console.error("Error fetching login states:", error);
+                isOnline = false;
             });
 
             Promise.all([
@@ -589,18 +592,12 @@
             ]).then(([lightSnapshot, fanSnapshot]) => {
                 document.getElementById('lightSwitch').checked = lightSnapshot.val() || false;
                 document.getElementById('fanSwitch').checked = fanSnapshot.val() || false;
+                isOnline = true;
             }).catch(error => {
                 console.error("Error fetching control states:", error);
-            });
-
-            // Firebase control listeners
-            const controlRef = firebase.database().ref('/control/');
-            controlRef.on('value', (snapshot) => {
-                const data = snapshot.val();
-                if (data) {
-                    document.getElementById('lightSwitch').checked = data.light || false;
-                    document.getElementById('fanSwitch').checked = data.fan || false;
-                }
+                isOnline = false;
+                document.getElementById('lightSwitch').checked = false;
+                document.getElementById('fanSwitch').checked = false;
             });
 
             // Control switch handlers
@@ -845,6 +842,7 @@
 
         const showLoginOverlay = () => {
             document.getElementById('loginOverlay').style.display = 'block';
+            document.getElementById('logout-button').style.display = 'none';
             initLoginScanner();
         };
 
