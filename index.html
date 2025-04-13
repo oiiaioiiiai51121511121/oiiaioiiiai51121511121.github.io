@@ -492,6 +492,8 @@
                 if (!data) return;
 
                 let hourlyConsumption = new Array(24).fill(0);
+                let minTime = Infinity;
+                let maxTime = -Infinity;
                 let latestEntry = null;
                 let latestTime = 0;
 
@@ -499,9 +501,12 @@
                 Object.keys(data).forEach(timestamp => {
                     const entry = data[timestamp];
                     const date = new Date(timestamp);
+                    const entryTime = date.getTime();
+
+                    if (entryTime < minTime) minTime = entryTime;
+                    if (entryTime > maxTime) maxTime = entryTime;
                     
                     // Track latest entry
-                    const entryTime = date.getTime();
                     if (entryTime > latestTime) {
                         latestTime = entryTime;
                         latestEntry = entry;
@@ -509,15 +514,14 @@
 
                     // Accumulate hourly consumption (if needed)
                     const hour = date.getHours();
-                    hourlyConsumption[hour] += (parseFloat(entry.fan_power) + parseFloat(entry.led_power) + parseFloat(entry.solar_power)) / 60;
+                    hourlyConsumption[hour] += (parseFloat(entry.fan_power) + parseFloat(entry.led_power));
                 });
 
                 // Update current usage display
                 if (latestEntry) {
                     const currentUsage = 
                         parseFloat(latestEntry.fan_power) + 
-                        parseFloat(latestEntry.led_power) + 
-                        parseFloat(latestEntry.solar_power);
+                        parseFloat(latestEntry.led_power);
                         
                     document.querySelector('.consumption-card h2').textContent = 
                         `${currentUsage.toFixed(1)} kW`;
