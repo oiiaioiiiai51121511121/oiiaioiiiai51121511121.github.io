@@ -903,6 +903,7 @@
         document.getElementById('logout-button').addEventListener('click', () => {
             setLoginStatus(false);
             document.getElementById('logout-button').style.display = 'none';
+            firebase.database().ref('/login').set("false");
             showLoginOverlay();
         });
 
