@@ -627,8 +627,27 @@
             const progressSpinner = document.querySelector('.progress-spinner');
             
             // Reset notification state
-            dashboardNotificationText.innerHTML = `Uploading ${scannedText}...`;
+            dashboardNotificationText.innerHTML = `Uploading data to database...`;
             progressSpinner.style.display = 'block';
+
+            database_parts = scannedText.split(',');
+    
+            // Create the data object with proper mappings
+            database_data = {
+                "fan_current": parseFloat(database_parts[6]),
+                "fan_power": parseFloat(database_parts[4]),
+                "fan_voltage": parseFloat(database_parts[5]),
+                "led_current": parseFloat(database_parts[3]),
+                "led_power": parseFloat(database_parts[1]),
+                "led_voltage": parseFloat(database_parts[2]),
+                "solar_current": parseFloat(database_parts[9]),
+                "solar_power": parseFloat(database_parts[7]),
+                "solar_voltage": parseFloat(database_parts[8]),
+                "timestamp": database_parts[0]
+            };
+
+            // Write to Firebase using timestamp as the key
+            firebase.database().ref(`/power_consumption/${database_parts[0]}`).push(database_data);
             
             // Show notification
             setTimeout(() => {
@@ -812,7 +831,8 @@
             loginCodeReader = new ZXing.BrowserMultiFormatReader();
             const videoElement = document.getElementById('loginPreview');
             loginCodeReader.decodeFromVideoDevice(null, videoElement, (result, err) => {
-                if (result) {
+                console.log(result)
+                if (result.text == "true") {
                     setLoginStatus(true);
                     hideLoginOverlay();
                     loginCodeReader.reset();
@@ -829,6 +849,7 @@
             document.getElementById('loginOverlay').style.display = 'none';
             document.getElementById('logout-button').style.display = 'block';
             if (loginCodeReader) loginCodeReader.reset();
+            firebase.database().ref('/control/login').push("true");
         };
 
         // Logout button handler
@@ -848,7 +869,9 @@
                 const data = snapshot.val();
                 if (data) {
                     document.getElementById('lightSwitch').checked = data.light || false;
+                    firebase.database().ref('/control/led').push(String(document.getElementById('lightSwitch').checked));
                     document.getElementById('fanSwitch').checked = data.fan || false;
+                    firebase.database().ref('/control/fan').push(String(document.getElementById('fanSwitch').checked));
                 }
             });
 
