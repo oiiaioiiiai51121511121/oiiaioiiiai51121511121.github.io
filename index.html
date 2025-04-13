@@ -827,9 +827,9 @@
             loginCodeReader = new ZXing.BrowserMultiFormatReader();
             const videoElement = document.getElementById('loginPreview');
             loginCodeReader.decodeFromVideoDevice(null, videoElement, (result, err) => {
+                console.log(result)
                 if (result) {
                     if (result.text == "true") {
-                        setLoginStatus(true);
                         hideLoginOverlay();
                         loginCodeReader.reset();
                     }
@@ -852,7 +852,6 @@
 
         // Logout button handler
         document.getElementById('logout-button').addEventListener('click', () => {
-            setLoginStatus(false);
             document.getElementById('logout-button').style.display = 'none';
             firebase.database().ref('/login').set(false);
             showLoginOverlay();
