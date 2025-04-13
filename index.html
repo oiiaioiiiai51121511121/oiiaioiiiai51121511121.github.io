@@ -801,23 +801,6 @@
             updatePayButton();
         }
 
-        function readDataSample() {
-            var ref = firebase.database().ref('/power_consumption/');
-            ref.on("value", function (snapshot) {
-                const data = snapshot.val();
-            }, function (error) {
-                console.log("Error: " + error.code);
-            });
-        }
-
-        function writeDataSample() {
-            firebase.database().ref('/power_consumption/').push({ 
-                name: 'name',
-                age: 'age',
-                address : 'address'
-            });
-        }
-
         let originalPaymentContent = document.querySelector('#page3 .container').innerHTML;
 
         // Login scanner logic
