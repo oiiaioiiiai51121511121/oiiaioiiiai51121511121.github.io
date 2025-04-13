@@ -623,7 +623,7 @@
 
             loginStatusListener = database.ref('/report').on('value', snapshot => {
                 if (snapshot.val() != reportContent) {
-                    if (snapshot.val() != reportContent) {
+                    if (snapshot.val() != "No report is available") {
                         document.getElementById('reportContent').innerHTML = snapshot.val();
                         insightMessagesReport = "";
                     } else {
