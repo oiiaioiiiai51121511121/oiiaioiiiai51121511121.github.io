@@ -224,7 +224,7 @@
                         <div class="card-body text-center">
                             <h5><i class="bi bi-currency-dollar text-success"></i> Daily Cost</h5>
                             <h2 class="display-4" id="dailyCost">$0.00</h2>
-                            <p class="text-muted" id="dailyEnergy">0.0 kWh today</p>
+                            <p class="text-muted" id="dailyEnergy">0.0 Wh today</p>
                         </div>
                     </div>
                 </div>
@@ -494,7 +494,7 @@
                 data: {
                     labels: Array.from({length: 24}, (_, i) => `${i}:00`),
                     datasets: [{
-                        label: 'Energy Consumption (kWh)',
+                        label: 'Energy Consumption (Wh)',
                         data: [],
                         backgroundColor: [],
                         borderWidth: 1
@@ -513,7 +513,7 @@
                     scales: {
                         y: {
                             beginAtZero: true,
-                            title: { display: true, text: 'kWh' }
+                            title: { display: true, text: 'Wh' }
                         }
                     }
                 }
