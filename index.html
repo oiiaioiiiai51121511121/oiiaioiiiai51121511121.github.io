@@ -581,34 +581,89 @@
                 document.querySelector('.consumption-card h2').textContent = 
                     `${currentPowerW.toFixed(1)} W`;
                 
-                // Calculate hourly cost (realistic $1.5/kWh)
-                const hourlyCost = (currentPowerW / 1000) * 1.5; // Convert W to kW
+                // Calculate hourly cost (slightly exaggerated $2.5/kWh)
+                const hourlyCost = (currentPowerW / 1000) * 2.5;
                 document.querySelector('.consumption-card .text-muted').textContent = 
                     `≈ $${hourlyCost.toFixed(2)}/hr`;
 
-                // Update daily totals
-                const dailyCost = (totalEnergyWh / 1000) * 1.5; // $1.5/kWh
+                // Update daily totals (exaggerated)
+                const dailyCost = (totalEnergyWh / 1000) * 2.5; // $2.5/kWh
                 document.getElementById('dailyCost').textContent = 
                     `$${dailyCost.toFixed(2)}`;
                 document.getElementById('dailyEnergy').textContent = 
                     `${(totalEnergyWh / 1000).toFixed(1)} kWh today`;
 
-                // Realistic carbon footprint (0.5 kg CO₂/kWh - global average)
-                const carbonFootprint = (totalEnergyWh / 1000) * 0.5;
+                // Exaggerated carbon footprint (1.2 kg CO₂/kWh)
+                const carbonFootprint = (totalEnergyWh / 1000) * 1.2;
                 document.getElementById('carbonFootprint').textContent = 
                     `${carbonFootprint.toFixed(1)} kg`;
 
-                // Update chart
+                // Update chart with new style
                 consumptionChart.data.datasets[0].data = hourlyEnergy;
-                consumptionChart.options.scales.y.title.text = 'Wh';
+                consumptionChart.data.datasets[0].backgroundColor = 'rgba(54, 162, 235, 0.2)';
+                consumptionChart.data.datasets[0].borderColor = 'rgba(54, 162, 235, 1)';
+                consumptionChart.data.datasets[0].borderWidth = 2;
+                consumptionChart.data.datasets[0].pointRadius = 4;
+                consumptionChart.data.datasets[0].pointBackgroundColor = 'rgba(54, 162, 235, 1)';
+                consumptionChart.data.datasets[0].tension = 0.4;
+                
+                consumptionChart.options = {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top',
+                            labels: {
+                                font: {
+                                    size: 14,
+                                    family: 'Dosis, sans-serif'
+                                }
+                            }
+                        },
+                        tooltip: {
+                            enabled: true,
+                            backgroundColor: 'rgba(0,0,0,0.8)',
+                            titleFont: { family: 'Dosis, sans-serif' },
+                            bodyFont: { family: 'Dosis, sans-serif' }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Energy (Wh)',
+                                font: {
+                                    size: 14,
+                                    family: 'Dosis, sans-serif'
+                                }
+                            },
+                            grid: { color: 'rgba(0,0,0,0.05)' }
+                        },
+                        x: {
+                            grid: { display: false },
+                            ticks: {
+                                font: {
+                                    family: 'Dosis, sans-serif'
+                                }
+                            }
+                        }
+                    }
+                };
+
                 consumptionChart.update();
 
                 // Update graph title with time range
                 const formatTime = ts => new Date(ts).toLocaleString('en-GB', {
-                    day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit'
+                    day: '2-digit', 
+                    month: 'short', 
+                    hour: '2-digit', 
+                    minute: '2-digit',
+                    hour12: false
                 });
+                
                 document.getElementById('dashboardGraphTitle').textContent = 
-                    `Energy Consumption: ${formatTime(minTime)} - ${formatTime(maxTime)}`;
+                    `Hourly Energy Consumption • ${formatTime(minTime)} - ${formatTime(maxTime)}`;
 
                 setIsOnline(true);
             }, function(error) {
