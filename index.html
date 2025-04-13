@@ -208,13 +208,13 @@
             </div>
         </div>
         <div class="container" style="padding-bottom: 96px;">
+            <!-- Stats Row -->
             <div class="row g-4 mb-4">
-                <!-- Real-time Stats -->
                 <div class="col-md-4">
                     <div class="card consumption-card">
                         <div class="card-body text-center">
                             <h5><i class="bi bi-lightning-charge text-warning"></i> Current Usage</h5>
-                            <h2 class="display-4">0.0 kW</h2>
+                            <h2 class="display-4">0.0 W</h2>
                             <p class="text-muted">≈ $0.00/hr</p>
                         </div>
                     </div>
@@ -223,8 +223,8 @@
                     <div class="card">
                         <div class="card-body text-center">
                             <h5><i class="bi bi-currency-dollar text-success"></i> Daily Cost</h5>
-                            <h2 class="display-4">$4.32</h2>
-                            <p class="text-muted">12 kWh today</p>
+                            <h2 class="display-4" id="dailyCost">$0.00</h2>
+                            <p class="text-muted" id="dailyEnergy">0.0 kWh today</p>
                         </div>
                     </div>
                 </div>
@@ -232,27 +232,19 @@
                     <div class="card">
                         <div class="card-body text-center">
                             <h5><i class="bi bi-globe text-primary"></i> Carbon Footprint</h5>
-                            <h2 class="display-4">18 kg</h2>
+                            <h2 class="display-4" id="carbonFootprint">0.0 kg</h2>
                             <p class="text-muted">CO₂ today</p>
                         </div>
                     </div>
                 </div>
             </div>
 
+            <!-- Main Content Row -->
             <div class="row g-4">
-                <!-- Energy Chart -->
-                <div class="col-lg-8">
-                    <div class="card">
-                        <div class="card-header" id="dashboardGraphTitle">Energy Consumption</div>
-                        <div class="card-body">
-                            <canvas id="consumptionChart"></canvas>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Insights -->
-                <div class="col-lg-4">
-                    <div class="card alert-card">
+                <!-- Left Column -->
+                <div class="col-lg-4 order-lg-2">
+                    <!-- Insights Card -->
+                    <div class="card alert-card mb-4">
                         <div class="card-header">Insights</div>
                         <div class="card-body">
                             <div class="list-group" id="insightMessages">
@@ -275,30 +267,39 @@
                             </div>
                         </div>
                     </div>
-                </div>
-            </div>
-
-            <div class="col-md-4">
-                <div class="card">
-                    <div class="card-body text-center">
-                        <h5><i class="bi bi-gear text-primary"></i> Appliance Control</h5>
-                        <div class="form-check form-switch form-switch-lg my-3">
-                            <input class="form-check-input" type="checkbox" role="switch" id="lightSwitch">
-                            <label class="form-check-label" for="lightSwitch">Light Control</label>
-                        </div>
-                        <div class="form-check form-switch form-switch-lg my-3">
-                            <input class="form-check-input" type="checkbox" role="switch" id="fanSwitch">
-                            <label class="form-check-label" for="fanSwitch">Fan Control</label>
+                    
+                    <!-- Appliance Control Card -->
+                    <div class="card alert-card">
+                        <div class="card-body text-center">
+                            <h5><i class="bi bi-gear text-primary"></i> Appliance Control</h5>
+                            <div class="form-check form-switch form-switch-lg my-3">
+                                <input class="form-check-input" type="checkbox" role="switch" id="lightSwitch">
+                                <label class="form-check-label" for="lightSwitch">Light Control</label>
+                            </div>
+                            <div class="form-check form-switch form-switch-lg my-3">
+                                <input class="form-check-input" type="checkbox" role="switch" id="fanSwitch">
+                                <label class="form-check-label" for="fanSwitch">Fan Control</label>
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
 
-            <div class="col-md-8">
-                <div class="card">
-                    <div class="card-header">System Report</div>
-                    <div class="card-body" id="reportContent">
-                        <!-- Markdown content will be loaded here -->
+                <!-- Right Column -->
+                <div class="col-lg-8 order-lg-1">
+                    <!-- Energy Chart -->
+                    <div class="card mb-4">
+                        <div class="card-header" id="dashboardGraphTitle">Energy Consumption</div>
+                        <div class="card-body">
+                            <canvas id="consumptionChart"></canvas>
+                        </div>
+                    </div>
+                    
+                    <!-- System Report -->
+                    <div class="card">
+                        <div class="card-header">System Report</div>
+                        <div class="card-body" id="reportContent">
+                            <!-- Report content -->
+                        </div>
                     </div>
                 </div>
             </div>
@@ -552,18 +553,31 @@
 
                 // Update current usage display
                 if (latestEntry) {
-                    const currentUsage = 
-                        parseFloat(latestEntry.fan_power) + 
-                        parseFloat(latestEntry.led_power);
+                    const currentUsageW = 
+                        (parseFloat(latestEntry.fan_power) + 
+                         parseFloat(latestEntry.led_power)) / 1000; // Convert mW to W
                         
                     document.querySelector('.consumption-card h2').textContent = 
-                        `${currentUsage.toFixed(1)} kW`;
+                        `${currentUsageW.toFixed(1)} W`;
                     
-                    // Update hourly rate (assuming $0.075/kWh)
-                    const hourlyRate = currentUsage * 0.075;
+                    // Update hourly rate (exaggerated $50/kWh)
+                    const hourlyRate = (currentUsageW / 1000) * 50; // Convert W to kW * $50
                     document.querySelector('.consumption-card .text-muted').textContent = 
                         `≈ $${hourlyRate.toFixed(2)}/hr`;
                 }
+
+                // Calculate daily totals
+                const totalmWh = hourlyConsumption.reduce((a, b) => a + b, 0);
+                const totalkWh = totalmWh / 1000000; // Convert mWh to kWh
+                
+                // Exaggerated daily cost ($100/kWh)
+                const dailyCost = totalkWh * 100;
+                document.getElementById('dailyCost').textContent = `$${dailyCost.toFixed(2)}`;
+                document.getElementById('dailyEnergy').textContent = `${totalkWh.toFixed(1)} kWh today`;
+
+                // Exaggerated carbon footprint (200kg CO₂/kWh)
+                const carbonFootprint = totalkWh * 200;
+                document.getElementById('carbonFootprint').textContent = `${carbonFootprint.toFixed(1)} kg`;
 
                 // Calculate peak hours
                 const maxConsumption = Math.max(...hourlyConsumption);
@@ -632,7 +646,7 @@
                         insightMessagesReport = "";
                         updateInsight();
                     } else {
-                        document.getElementById('reportContent').innerHTML = "No report.";
+                        document.getElementById('reportContent').innerHTML = snapshot.val();
                         insightMessagesReport = '<a class="list-group-item list-group-item-action"><i class="bi bi-lightbulb text-primary me-2"></i>Get a power consumption report</a>';
                         updateInsight();
                     }
