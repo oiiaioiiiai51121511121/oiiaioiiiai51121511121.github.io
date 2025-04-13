@@ -530,12 +530,20 @@
                 let maxTime = -Infinity;
                 let latestEntry = null;
                 let latestTime = 0;
+                let totalmWh = 0; // Initialize totalmWh
 
                 // Process all data entries
                 Object.keys(data).forEach(timestamp => {
                     const entry = data[timestamp];
                     const date = new Date(timestamp);
+                    
+                    // Add null checks and default values
+                    if (!entry || isNaN(date.getTime())) return;
+
                     const entryTime = date.getTime();
+                    
+                    // Handle invalid timestamps
+                    if (typeof entryTime !== 'number') return;
 
                     if (entryTime < minTime) minTime = entryTime;
                     if (entryTime > maxTime) maxTime = entryTime;
@@ -546,38 +554,45 @@
                         latestEntry = entry;
                     }
 
-                    // Accumulate hourly consumption (if needed)
+                    // Convert power values to numbers with fallback
+                    const fanPower = parseFloat(entry.fan_power) || 0;
+                    const ledPower = parseFloat(entry.led_power) || 0;
+                    
+                    // Accumulate hourly consumption in mWh
                     const hour = date.getHours();
-                    hourlyConsumption[hour] += (parseFloat(entry.fan_power) + parseFloat(entry.led_power));
+                    hourlyConsumption[hour] += (fanPower + ledPower);
+                    totalmWh += (fanPower + ledPower); // Add to total
                 });
 
-                // Update current usage display
+                // Update current usage display with fallback values
                 if (latestEntry) {
-                    const currentUsageW = 
-                        (parseFloat(latestEntry.fan_power) + 
-                         parseFloat(latestEntry.led_power)) / 1000; // Convert mW to W
-                        
+                    const fanPower = parseFloat(latestEntry.fan_power) || 0;
+                    const ledPower = parseFloat(latestEntry.led_power) || 0;
+                    const currentUsageW = (fanPower + ledPower) / 1000; // Convert mW to W
+                    
                     document.querySelector('.consumption-card h2').textContent = 
                         `${currentUsageW.toFixed(1)} W`;
                     
-                    // Update hourly rate (exaggerated $50/kWh)
-                    const hourlyRate = (currentUsageW / 1000) * 50; // Convert W to kW * $50
+                    // Calculate hourly cost (using kW * rate)
+                    const hourlyRate = (currentUsageW / 1000) * 50; // $50/kWh
                     document.querySelector('.consumption-card .text-muted').textContent = 
                         `≈ $${hourlyRate.toFixed(2)}/hr`;
                 }
 
-                // Calculate daily totals
-                const totalmWh = hourlyConsumption.reduce((a, b) => a + b, 0);
-                const totalkWh = totalmWh / 1000000; // Convert mWh to kWh
+                // Convert totalmWh to kWh (1 kWh = 1,000,000 mWh)
+                const totalkWh = totalmWh / 1000000 || 0;
                 
-                // Exaggerated daily cost ($100/kWh)
-                const dailyCost = totalkWh * 100;
-                document.getElementById('dailyCost').textContent = `$${dailyCost.toFixed(2)}`;
-                document.getElementById('dailyEnergy').textContent = `${totalkWh.toFixed(1)} kWh today`;
+                // Daily cost calculation
+                const dailyCost = totalkWh * 100; // $100/kWh
+                document.getElementById('dailyCost').textContent = 
+                    `$${dailyCost.toFixed(2)}`;
+                document.getElementById('dailyEnergy').textContent = 
+                    `${totalkWh.toFixed(1)} kWh today`;
 
-                // Exaggerated carbon footprint (200kg CO₂/kWh)
+                // Carbon footprint calculation (200 kg/kWh)
                 const carbonFootprint = totalkWh * 200;
-                document.getElementById('carbonFootprint').textContent = `${carbonFootprint.toFixed(1)} kg`;
+                document.getElementById('carbonFootprint').textContent = 
+                    `${carbonFootprint.toFixed(1)} kg`;
 
                 // Calculate peak hours
                 const maxConsumption = Math.max(...hourlyConsumption);
@@ -742,16 +757,22 @@
             progressSpinner.style.display = 'block';
 
             const database_parts = scannedText.split(',');
+    
+            if (database_parts.length < 10) {
+                console.error('Invalid QR code format');
+                return;
+            }
+
             const database_data = {
-                "fan_current": parseFloat(database_parts[6]),
-                "fan_power": parseFloat(database_parts[4]),
-                "fan_voltage": parseFloat(database_parts[5]),
-                "led_current": parseFloat(database_parts[3]),
-                "led_power": parseFloat(database_parts[1]),
-                "led_voltage": parseFloat(database_parts[2]),
-                "solar_current": parseFloat(database_parts[9]),
-                "solar_power": parseFloat(database_parts[7]),
-                "solar_voltage": parseFloat(database_parts[8]),
+                "fan_current": parseFloat(database_parts[6]) || 0,
+                "fan_power": parseFloat(database_parts[4]) || 0,
+                "fan_voltage": parseFloat(database_parts[5]) || 0,
+                "led_current": parseFloat(database_parts[3]) || 0,
+                "led_power": parseFloat(database_parts[1]) || 0,
+                "led_voltage": parseFloat(database_parts[2]) || 0,
+                "solar_current": parseFloat(database_parts[9]) || 0,
+                "solar_power": parseFloat(database_parts[7]) || 0,
+                "solar_voltage": parseFloat(database_parts[8]) || 0,
                 "timestamp": database_parts[0]
             };
 
