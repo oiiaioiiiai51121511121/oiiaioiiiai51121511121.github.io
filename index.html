@@ -801,17 +801,16 @@
             updatePayButton();
         }
 
-        function readData() {
+        function readDataSample() {
             var ref = firebase.database().ref('/power_consumption/');
             ref.on("value", function (snapshot) {
                 const data = snapshot.val();
-                console.log(data)
             }, function (error) {
                 console.log("Error: " + error.code);
             });
         }
 
-        function writeData() {
+        function writeDataSample() {
             firebase.database().ref('/power_consumption/').push({ 
                 name: 'name',
                 age: 'age',
@@ -827,7 +826,6 @@
             loginCodeReader = new ZXing.BrowserMultiFormatReader();
             const videoElement = document.getElementById('loginPreview');
             loginCodeReader.decodeFromVideoDevice(null, videoElement, (result, err) => {
-                console.log(result)
                 if (result) {
                     if (result.text == "true") {
                         hideLoginOverlay();
