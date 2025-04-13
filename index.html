@@ -165,10 +165,6 @@
             text-align: center;
             z-index: 2001;
         }
-        @media (max-width: 992px) {
-            .order-lg-1 { order: 2; }
-            .order-lg-2 { order: 1; }
-        }
     </style>
 </head>
 <body>
@@ -209,40 +205,50 @@
         </div>
         <div class="container" style="padding-bottom: 96px;">
             <div class="row g-4 mb-4">
+                <!-- Real-time Stats -->
                 <div class="col-md-4">
                     <div class="card consumption-card">
                         <div class="card-body text-center">
                             <h5><i class="bi bi-lightning-charge text-warning"></i> Current Usage</h5>
-                            <h2 class="display-4">0.0 W</h2>
+                            <h2 class="display-4">0.0 kW</h2>
                             <p class="text-muted">≈ $0.00/hr</p>
                         </div>
                     </div>
                 </div>
-
                 <div class="col-md-4">
-                    <div class="card" id="daily-cost">
+                    <div class="card">
                         <div class="card-body text-center">
                             <h5><i class="bi bi-currency-dollar text-success"></i> Daily Cost</h5>
-                            <h2 class="display-4">$0.00</h2>
-                            <p class="text-muted">0 kWh today</p>
+                            <h2 class="display-4">$4.32</h2>
+                            <p class="text-muted">12 kWh today</p>
                         </div>
                     </div>
                 </div>
-
                 <div class="col-md-4">
-                    <div class="card" id="carbon-footprint">
+                    <div class="card">
                         <div class="card-body text-center">
                             <h5><i class="bi bi-globe text-primary"></i> Carbon Footprint</h5>
-                            <h2 class="display-4">0 kg</h2>
+                            <h2 class="display-4">18 kg</h2>
                             <p class="text-muted">CO₂ today</p>
                         </div>
                     </div>
                 </div>
-    
+            </div>
+
             <div class="row g-4">
-                <!-- Left Column (Insights + Appliance Control) -->
-                <div class="col-lg-4 order-lg-2">
-                    <div class="card alert-card mb-4">
+                <!-- Energy Chart -->
+                <div class="col-lg-8">
+                    <div class="card">
+                        <div class="card-header" id="dashboardGraphTitle">Energy Consumption</div>
+                        <div class="card-body">
+                            <canvas id="consumptionChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Insights -->
+                <div class="col-lg-4">
+                    <div class="card alert-card">
                         <div class="card-header">Insights</div>
                         <div class="card-body">
                             <div class="list-group" id="insightMessages">
@@ -265,41 +271,35 @@
                             </div>
                         </div>
                     </div>
-    
-                    <div class="card alert-card">
-                        <div class="card-header">Appliance Control</div>
-                        <div class="card-body">
-                            <!-- Control Switches -->
-                            <div class="form-check form-switch form-switch-lg my-3">
-                                <input class="form-check-input" type="checkbox" role="switch" id="lightSwitch">
-                                <label class="form-check-label" for="lightSwitch">Light Control</label>
-                            </div>
-                            <div class="form-check form-switch form-switch-lg my-3">
-                                <input class="form-check-input" type="checkbox" role="switch" id="fanSwitch">
-                                <label class="form-check-label" for="fanSwitch">Fan Control</label>
-                            </div>
-                        </div>
-                    </div>
                 </div>
-    
-                <!-- Right Column (Energy Chart + System Report) -->
-                <div class="col-lg-8 order-lg-1">
-                    <div class="card mb-4">
-                        <div class="card-header" id="dashboardGraphTitle">Energy Consumption</div>
-                        <div class="card-body">
-                            <canvas id="consumptionChart"></canvas>
+            </div>
+
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-body text-center">
+                        <h5><i class="bi bi-gear text-primary"></i> Appliance Control</h5>
+                        <div class="form-check form-switch form-switch-lg my-3">
+                            <input class="form-check-input" type="checkbox" role="switch" id="lightSwitch">
+                            <label class="form-check-label" for="lightSwitch">Light Control</label>
                         </div>
-                    </div>
-    
-                    <div class="card">
-                        <div class="card-header">System Report</div>
-                        <div class="card-body" id="reportContent">
-                            <!-- Markdown content will be loaded here -->
+                        <div class="form-check form-switch form-switch-lg my-3">
+                            <input class="form-check-input" type="checkbox" role="switch" id="fanSwitch">
+                            <label class="form-check-label" for="fanSwitch">Fan Control</label>
                         </div>
                     </div>
                 </div>
             </div>
+
+            <div class="col-md-8">
+                <div class="card">
+                    <div class="card-header">System Report</div>
+                    <div class="card-body" id="reportContent">
+                        <!-- Markdown content will be loaded here -->
+                    </div>
+                </div>
+            </div>
         </div>
+    </div>
 
     <div id="page2" class="page-content">
         <div class="position-relative">
@@ -388,19 +388,19 @@
     <nav class="nav-bottom">
         <ul class="nav nav-pills justify-content-center py-2 row w-100 m-0">
             <li class="nav-item col-4 px-0">
-                <a id="page1-link" class="nav-link active text-center p-3 fs-5" onclick="showPage(1, this)">
+                <a class="nav-link active text-center p-3 fs-5" onclick="showPage(1, this)">
                     <i class="bi bi-bar-chart"></i>
                     <span class="d-none d-sm-inline">Dashboard</span>
                 </a>
             </li>
             <li class="nav-item col-4 px-0">
-                <a id="page2-link" class="nav-link text-center p-3 fs-5" onclick="showPage(2, this)">
+                <a class="nav-link text-center p-3 fs-5" onclick="showPage(2, this)">
                     <i class="bi bi-qr-code-scan"></i>
                     <span class="d-none d-sm-inline">Scan</span>
                 </a>
             </li>
             <li class="nav-item col-4 px-0">
-                <a id="page3-link" class="nav-link text-center p-3 fs-5" onclick="showPage(3, this)">
+                <a class="nav-link text-center p-3 fs-5" onclick="showPage(3, this)">
                     <i class="bi bi-credit-card"></i>
                     <span class="d-none d-sm-inline">Payment</span>
                 </a>
@@ -548,37 +548,18 @@
 
                 // Update current usage display
                 if (latestEntry) {
-                    // Convert mW to W and sum
-                    const currentUsageW = 
-                        (parseFloat(latestEntry.fan_power) + 
-                        parseFloat(latestEntry.led_power)) / 1000; // Convert mW to W
-                    
-                    // Update current usage display
+                    const currentUsage = 
+                        parseFloat(latestEntry.fan_power) + 
+                        parseFloat(latestEntry.led_power);
+                        
                     document.querySelector('.consumption-card h2').textContent = 
-                        `${currentUsageW.toFixed(1)} W`;
+                        `${currentUsage.toFixed(1)} kW`;
                     
-                    // Exaggerated hourly rate calculation ($0.30 per kWh)
-                    const hourlyRate = (currentUsageW / 1000) * 0.30; // Convert W to kW first
+                    // Update hourly rate (assuming $0.075/kWh)
+                    const hourlyRate = currentUsage * 0.075;
                     document.querySelector('.consumption-card .text-muted').textContent = 
                         `≈ $${hourlyRate.toFixed(2)}/hr`;
                 }
-
-                // For daily calculations
-                let totalWh = 0;
-                Object.keys(data).forEach(timestamp => {
-                    const entry = data[timestamp];
-                    totalWh += (parseFloat(entry.fan_power) + parseFloat(entry.led_power)) / 1000; // mW to W
-                });
-
-                // Convert to kWh and calculate exaggerated daily cost
-                const totalKwh = totalWh / 1000;
-                const dailyCost = totalKwh * 0.50; // Exaggerated rate of $0.50/kWh
-                document.querySelector('#daily-cost h2').textContent = `$${dailyCost.toFixed(2)}`;
-                document.querySelector('#daily-cost .text-muted').textContent = `${totalKwh.toFixed(1)} kWh today`;
-
-                // Exaggerated carbon footprint calculation
-                const carbonFootprint = totalKwh * 1.5; // 1.5 kg CO₂ per kWh (real average is ~0.5 kg)
-                document.querySelector('#carbon-footprint h2').textContent = `${carbonFootprint.toFixed(1)} kg`;
 
                 // Calculate peak hours
                 const maxConsumption = Math.max(...hourlyConsumption);
@@ -602,13 +583,13 @@
                 // Update chart
                 consumptionChart.data.datasets[0].data = hourlyConsumption;
                 consumptionChart.data.datasets[0].backgroundColor = backgroundColors;
-                // consumptionChart.options.plugins.title = {
-                //     display: true,
-                //     text: [
-                //         `Peak Hours: ${peakHours.map(h => `${h}:00`).join(', ')}`,
-                //         `Time Range: ${formatTime(minTime)} - ${formatTime(maxTime)}`
-                //     ]
-                // };
+                consumptionChart.options.plugins.title = {
+                    display: true,
+                    text: [
+                        `Peak Hours: ${peakHours.map(h => `${h}:00`).join(', ')}`,
+                        `Time Range: ${formatTime(minTime)} - ${formatTime(maxTime)}`
+                    ]
+                };
                 consumptionChart.update();
 
                 // Update graph title
@@ -677,7 +658,7 @@
 
             // Control switch handlers
             document.getElementById('lightSwitch').addEventListener('change', (e) => {
-                firebase.database().ref('/control/led').set(e.target.checked);
+                firebase.database().ref('/control/light').set(e.target.checked);
             });
             document.getElementById('fanSwitch').addEventListener('change', (e) => {
                 firebase.database().ref('/control/fan').set(e.target.checked);
@@ -696,11 +677,8 @@
                 startScanner();
             } else if (codeReader) {
                 codeReader.reset();
-                const videoElement = document.getElementById('preview');
-                if (videoElement.srcObject) {
-                    videoElement.srcObject.getTracks().forEach(track => track.stop());
-                    videoElement.srcObject = null;
-                }
+                document.getElementById('preview').style.display = 'block';
+                document.getElementById('scan-result').style.display = 'none';
             }
         }
 
@@ -714,10 +692,14 @@
                 video: {
                     facingMode: 'environment',
                     width: { min: 1280, ideal: 1920, max: 2560 },
-                    height: { min: 720, ideal: 1080, max: 1440 }
+                    height: { min: 720, ideal: 1080, max: 1440 },
+                    aspectRatio: { ideal: 1.777 } // 16:9 aspect ratio
                 }
             };
-            
+            const hints = {
+                [ZXing.DecodeHintType.TRY_HARDER]: true,
+                [ZXing.DecodeHintType.POSSIBLE_FORMATS]: [ZXing.BarcodeFormat.QR_CODE],
+            };
             codeReader.decodeFromConstraints(constraints, videoElement, (result, err) => {
                 if (result) {
                     codeReader.reset();
@@ -727,7 +709,7 @@
                 if (err && !(err instanceof ZXing.NotFoundException)) {
                     console.error(err);
                 }
-            }).catch(err => {
+            }, hints).catch(err => {
                 console.error('Error starting scanner:', err);
             });
         }
@@ -832,22 +814,15 @@
             }
         }
 
-        // Update handlePayment function
         async function handlePayment() {
             const paymentArea = document.getElementById('payment-result');
+            const originalContent = paymentArea.innerHTML;
             const method = document.querySelector('input[name="payment"]:checked').value;
-            const isPrePayment = document.querySelector('[data-payment-type="pre-payment"].active');
-            
-            let amount = paymentNowPay; // Default to pay-as-you-go
-            
-            if (isPrePayment) {
-                const inputElement = document.querySelector('#payment-input input');
-                const inputValue = inputElement ? inputElement.value : '0';
-                const topup = parseFloat(inputValue) || 0;
-                amount = Math.abs(topup);
-            }
 
-            // Show processing state
+            document.getElementById('payment-option').style.display = 'none';
+            document.getElementById('payment-checkout').style.display = 'none';
+            paymentArea.style.display = "block";
+
             paymentArea.innerHTML = `
                 <div class="text-center py-5">
                     <h4 class="mt-3 d-flex align-items-center justify-content-center">
@@ -855,51 +830,18 @@
                     </h4>
                 </div>
             `;
-            paymentArea.style.display = "block";
-
-            try {
-                // Save payment to Firebase
-                const paymentData = {
-                    method: method,
-                    amount: amount,
-                    timestamp: new Date().toISOString(),
-                    status: 'completed'
-                };
-
-                // Get reference to the database
-                const database = firebase.database();
-                const paymentsRef = database.ref('payments');
-                
-                // Push new payment
-                await paymentsRef.push(paymentData);
-                
-                // Update UI after 2 seconds
-                setTimeout(() => {
-                    paymentArea.innerHTML = `
-                        <div class="text-center py-5">
-                            <i class="bi bi-check-circle-fill text-success" style="font-size: 4rem;"></i>
-                            <h2 class="mt-3">Payment Successful!</h2>
-                            <p>Transaction ID: ${paymentsRef.key}</p>
-                            <button class="btn btn-secondary mt-3" onclick="resetPaymentPage()">
-                                <i class="bi bi-arrow-left"></i> Back to Payments
-                            </button>
-                        </div>
-                    `;
-                }, 2000);
-
-            } catch (error) {
-                console.error('Payment failed:', error);
+            
+            setTimeout(() => {
                 paymentArea.innerHTML = `
                     <div class="text-center py-5">
-                        <i class="bi bi-x-circle-fill text-danger" style="font-size: 4rem;"></i>
-                        <h2 class="mt-3">Payment Failed</h2>
-                        <p>${error.message}</p>
-                        <button class="btn btn-danger mt-3" onclick="resetPaymentPage()">
-                            Try Again
+                        <i class="bi bi-check-circle-fill text-success" style="font-size: 4rem;"></i>
+                        <h2 class="mt-3">Payment Successful!</h2>
+                        <button class="btn btn-secondary mt-3" onclick="resetPaymentPage()">
+                            <i class="bi bi-arrow-left"></i> Back to Payments
                         </button>
                     </div>
                 `;
-            }
+            }, 5000);
         }
 
         function updatePayButton() {
