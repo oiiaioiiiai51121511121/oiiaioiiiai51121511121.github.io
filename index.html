@@ -165,6 +165,10 @@
             text-align: center;
             z-index: 2001;
         }
+        @media (max-width: 992px) {
+            .order-lg-1 { order: 2; }
+            .order-lg-2 { order: 1; }
+        }
     </style>
 </head>
 <body>
@@ -583,13 +587,13 @@
                 // Update chart
                 consumptionChart.data.datasets[0].data = hourlyConsumption;
                 consumptionChart.data.datasets[0].backgroundColor = backgroundColors;
-                consumptionChart.options.plugins.title = {
-                    display: true,
-                    text: [
-                        `Peak Hours: ${peakHours.map(h => `${h}:00`).join(', ')}`,
-                        `Time Range: ${formatTime(minTime)} - ${formatTime(maxTime)}`
-                    ]
-                };
+                // consumptionChart.options.plugins.title = {
+                //     display: true,
+                //     text: [
+                //         `Peak Hours: ${peakHours.map(h => `${h}:00`).join(', ')}`,
+                //         `Time Range: ${formatTime(minTime)} - ${formatTime(maxTime)}`
+                //     ]
+                // };
                 consumptionChart.update();
 
                 // Update graph title
@@ -658,7 +662,7 @@
 
             // Control switch handlers
             document.getElementById('lightSwitch').addEventListener('change', (e) => {
-                firebase.database().ref('/control/light').set(e.target.checked);
+                firebase.database().ref('/control/led').set(e.target.checked);
             });
             document.getElementById('fanSwitch').addEventListener('change', (e) => {
                 firebase.database().ref('/control/fan').set(e.target.checked);
