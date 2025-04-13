@@ -600,31 +600,41 @@
 
                 // Update chart with new style
                 consumptionChart.data.datasets[0].data = hourlyEnergy;
-                consumptionChart.data.datasets[0].backgroundColor = 'rgba(54, 162, 235, 0.2)';
-                consumptionChart.data.datasets[0].borderColor = 'rgba(54, 162, 235, 1)';
-                consumptionChart.data.datasets[0].borderWidth = 2;
-                consumptionChart.data.datasets[0].pointRadius = 4;
-                consumptionChart.data.datasets[0].pointBackgroundColor = 'rgba(54, 162, 235, 1)';
-                consumptionChart.data.datasets[0].tension = 0.4;
                 
+                // Restore original bar chart style with peak highlighting
+                const maxHourly = Math.max(...hourlyEnergy);
+                const backgroundColors = hourlyEnergy.map((v, hour) => 
+                    v === maxHourly 
+                        ? 'rgba(246, 241, 160, 1.0)'  // Yellow for peaks (original)
+                        : 'rgba(54, 162, 235, 0.5)'    // Blue for normal (original)
+                );
+
+                consumptionChart.data.datasets[0] = {
+                    label: 'Energy Consumption (Wh)',
+                    data: hourlyEnergy,
+                    backgroundColor: backgroundColors,
+                    borderWidth: 1,
+                    barPercentage: 0.8,
+                    categoryPercentage: 0.9
+                };
+
+                // Restore original chart options
                 consumptionChart.options = {
                     responsive: true,
                     plugins: {
-                        legend: {
+                        legend: { 
                             display: true,
                             position: 'top',
                             labels: {
                                 font: {
-                                    size: 14,
                                     family: 'Dosis, sans-serif'
                                 }
                             }
                         },
                         tooltip: {
                             enabled: true,
-                            backgroundColor: 'rgba(0,0,0,0.8)',
-                            titleFont: { family: 'Dosis, sans-serif' },
-                            bodyFont: { family: 'Dosis, sans-serif' }
+                            mode: 'index',
+                            intersect: false
                         }
                     },
                     scales: {
@@ -632,16 +642,20 @@
                             beginAtZero: true,
                             title: {
                                 display: true,
-                                text: 'Energy (Wh)',
+                                text: 'Wh',
                                 font: {
-                                    size: 14,
                                     family: 'Dosis, sans-serif'
                                 }
                             },
-                            grid: { color: 'rgba(0,0,0,0.05)' }
+                            grid: {
+                                display: true,
+                                color: 'rgba(0,0,0,0.05)'
+                            }
                         },
                         x: {
-                            grid: { display: false },
+                            grid: {
+                                display: false
+                            },
                             ticks: {
                                 font: {
                                     family: 'Dosis, sans-serif'
