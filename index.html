@@ -435,15 +435,18 @@
         let peakHoursString = '';
         let timeRangeString = '';
         let loginStatusListener;
+        let reportStatusListener;
+        let adviceStatusListener;
         let isOnline = true;
         let isLogin;
         let reportContent;
         let insightMessagesOnline = "";
         let insightMessagesReport = "";
+        let insightMessagesAdvice = ""
         const onlineStatusListeners = new Set();
 
         function updateInsight() {
-            document.getElementById('insightMessages').innerHTML = insightMessagesOnline + insightMessagesReport;
+            document.getElementById('insightMessages').innerHTML = insightMessagesOnline + insightMessagesReport + insightMessagesAdvice;
         }
 
         function setIsOnline(status) {
@@ -582,7 +585,7 @@
                     `${currentPowerW.toFixed(1)} W`;
                 
                 // Calculate hourly cost (slightly exaggerated $2.5/kWh)
-                const hourlyCost = (currentPowerW / 1000) * 2.5;
+                const hourlyCost = (currentPowerW);
                 document.querySelector('.consumption-card .text-muted').textContent = 
                     `≈ $${hourlyCost.toFixed(2)}/hr`;
 
@@ -591,12 +594,12 @@
                 document.getElementById('dailyCost').textContent = 
                     `$${dailyCost.toFixed(2)}`;
                 document.getElementById('dailyEnergy').textContent = 
-                    `${(totalEnergyWh / 1000).toFixed(1)} kWh today`;
+                    `${(totalEnergyWh).toFixed(1)} mWh today`;
 
-                // Exaggerated carbon footprint (1.2 kg CO₂/kWh)
-                const carbonFootprint = (totalEnergyWh / 1000) * 1.2;
+                // Exaggerated carbon footprint (1.2g CO₂/Wh)
+                const carbonFootprint = (totalEnergyWh);
                 document.getElementById('carbonFootprint').textContent = 
-                    `${carbonFootprint.toFixed(1)} kg`;
+                    `${carbonFootprint.toFixed(1)} g`;
 
                 // Update chart with new style
                 consumptionChart.data.datasets[0].data = hourlyEnergy;
@@ -702,7 +705,7 @@
                 }
             );
 
-            loginStatusListener = database.ref('/report').on('value', snapshot => {
+            reportStatusListener = database.ref('/report').on('value', snapshot => {
                 if (snapshot.val() != reportContent) {
                     if (snapshot.val() != "No report is available") {
                         document.getElementById('reportContent').innerHTML = snapshot.val();
@@ -722,6 +725,32 @@
                     setIsOnline(false);
                 }
             );
+
+            Promise.all([
+                firebase.database().ref('/advice/humid').once('value'),
+                firebase.database().ref('/advice/temp').once('value'),
+                firebase.database().ref('/advice/uv').once('value'),
+                firebase.database().ref('/advice/weather').once('value')
+            ]).then(([humidSnapshot, tempSnapshot, uvSnapshot, weatherSnapshot]) => {
+                insightMessagesAdvice = '';
+                if (humidSnapshot.val()) {
+                    insightMessagesAdvice += '<a class="list-group-item list-group-item-action"><i class="bi bi-lightbulb text-primary me-2"></i>High humidity: The floor maybe slippery.</a>';
+                }
+                if (tempSnapshot.val()) {
+                    insightMessagesAdvice += '<a class="list-group-item list-group-item-action"><i class="bi bi-lightbulb text-primary me-2"></i>Hot weather: Stay hydrated.</a>';
+                }
+                if (uvSnapshot.val()) {
+                    insightMessagesAdvice += '<a class="list-group-item list-group-item-action"><i class="bi bi-lightbulb text-primary me-2"></i>High UV level: Bring umbrella and apply sunshine cream.</a>';
+                }
+                if (weatherSnapshot.val()) {
+                    insightMessagesAdvice += '<a class="list-group-item list-group-item-action"><i class="bi bi-lightbulb text-primary me-2"></i>Rainy: Bring umbrella.</a>';
+                }
+                updateInsight();
+                setIsOnline(true);
+            }).catch(error => {
+                console.error("Error fetching control states:", error);
+                setIsOnline(false);
+            });
 
             Promise.all([
                 firebase.database().ref('/control/led').once('value'),
