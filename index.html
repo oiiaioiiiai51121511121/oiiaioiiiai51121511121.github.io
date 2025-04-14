@@ -584,22 +584,20 @@
                 document.querySelector('.consumption-card h2').textContent = 
                     `${currentPowerW.toFixed(1)} W`;
                 
-                // Calculate hourly cost (slightly exaggerated $2.5/kWh)
-                const hourlyCost = (currentPowerW);
+                // Calculate hourly cost ($1/kWh)
+                const hourlyCost = (currentPowerW / 1000) * 1; // Changed from 2.5 to 1
                 document.querySelector('.consumption-card .text-muted').textContent = 
                     `≈ $${hourlyCost.toFixed(2)}/hr`;
 
-                // Update daily totals (exaggerated)
-                const dailyCost = (totalEnergyWh / 1000) * 2.5; // $2.5/kWh
+                // Update daily totals ($1/kWh)
+                const dailyCost = (totalEnergyWh / 1000) * 1; // Changed from 2.5 to 1
                 document.getElementById('dailyCost').textContent = 
                     `$${dailyCost.toFixed(2)}`;
-                document.getElementById('dailyEnergy').textContent = 
-                    `${(totalEnergyWh).toFixed(1)} mWh today`;
 
-                // Exaggerated carbon footprint (1.2g CO₂/Wh)
-                const carbonFootprint = (totalEnergyWh);
+                // Carbon footprint calculation (1.2g per mWh = 1.2kg per Wh)
+                const carbonFootprint = totalEnergyWh * 1.2; // Changed from simple totalEnergyWh
                 document.getElementById('carbonFootprint').textContent = 
-                    `${carbonFootprint.toFixed(1)} g`;
+                    `${carbonFootprint.toFixed(1)} kg`; // Changed unit from kg to kg (but scaled properly)
 
                 // Update chart with new style
                 consumptionChart.data.datasets[0].data = hourlyEnergy;
